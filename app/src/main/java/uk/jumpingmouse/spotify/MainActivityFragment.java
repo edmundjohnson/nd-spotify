@@ -12,12 +12,15 @@ import android.view.ViewGroup;
  */
 public class MainActivityFragment extends Fragment {
 
+    /**
+     * Default constructor.
+     */
     public MainActivityFragment() {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public final View onCreateView(final LayoutInflater inflater, final ViewGroup container,
+                                    final Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_main, container, false);
     }
 }
