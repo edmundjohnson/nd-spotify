@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="?android:attr/listPreferredItemHeight"
+    android:id="@+id/layoutArtistListItem">
+
+    <ImageView
+        android:id="@+id/imgArtist"
+        android:layout_margin="@dimen/abc_dialog_padding_material"
+        android:layout_width="@android:dimen/notification_large_icon_width"
+        android:layout_height="@android:dimen/notification_large_icon_height"
+        android:layout_gravity="center_vertical|start"
+        android:src="@mipmap/ic_launcher"
+        android:contentDescription="Artist Name"/>
+
+    <TextView
+        android:id="@+id/txtArtist"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="Artist Name"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="@dimen/abc_list_item_padding_horizontal_material"
+        android:layout_marginLeft="@dimen/abc_list_item_padding_horizontal_material" />
+
+</LinearLayout>
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/txtArtist"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textAppearance="?android:attr/textAppearanceLarge"
+    android:text="Artist Name"
+    android:layout_gravity="center_vertical"
+    android:layout_marginStart="@dimen/abc_list_item_padding_horizontal_material"
+    android:layout_marginLeft="@dimen/abc_list_item_padding_horizontal_material" />
