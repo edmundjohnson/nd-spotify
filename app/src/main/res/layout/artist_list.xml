@@ -12,9 +12,9 @@
     <EditText
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:id="@+id/editArtistName"
         android:inputType="textPersonName"
         android:ems="16"
-        android:id="@+id/editArtistName"
         android:hint="@string/hint_artist_name" />
 
     <FrameLayout

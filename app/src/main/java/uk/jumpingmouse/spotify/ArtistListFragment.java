@@ -3,7 +3,9 @@ package uk.jumpingmouse.spotify;
 import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.text.Editable;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -11,6 +13,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ListView;
 
 import java.security.InvalidParameterException;
@@ -23,6 +26,7 @@ import kaaes.spotify.webapi.android.models.Artist;
 
 import kaaes.spotify.webapi.android.models.ArtistsPager;
 import kaaes.spotify.webapi.android.models.Pager;
+import retrofit.RetrofitError;
 
 
 /**
@@ -32,11 +36,14 @@ public class ArtistListFragment extends Fragment {
     /** The log tag for this class. */
     private static final String LOG_TAG = ArtistListFragment.class.getSimpleName();
 
+    private EditText editArtistName;
+
     private List<Artist> artistList;
     //private List<Artist> adapterArtistList;
     private List<String> adapterArtistList;
 
     private ArrayAdapter<String> artistAdapter;
+    //private ArrayAdapter<Artist> artistAdapter;
 
     /**
      * Default constructor.
@@ -67,7 +74,9 @@ public class ArtistListFragment extends Fragment {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_refresh) {
-            new FetchArtistsTask().execute("Pink");
+            if (editArtistName != null && editArtistName.getText() != null) {
+                fetchArtists(editArtistName.getText().toString());
+            }
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -89,8 +98,6 @@ public class ArtistListFragment extends Fragment {
                 // the list data
                 adapterArtistList);
 /*
-        List<Artist> adapterArtistList = new ArrayList<>();
-
         ArrayAdapter<Artist> artistAdapter = new ArrayAdapter<>(
                 // the current context
                 getActivity(),
@@ -103,12 +110,43 @@ public class ArtistListFragment extends Fragment {
 */
         // Inflate the fragment
         View rootView = inflater.inflate(R.layout.artist_list, container, false);
+
+        // Get a reference to the artist name edit text box
+        editArtistName = (EditText) rootView.findViewById(R.id.editArtistName);
+
+        editArtistName.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View view, int keyCode, KeyEvent keyEvent) {
+                if (keyEvent.getAction() != KeyEvent.ACTION_DOWN) {
+                    return false;
+                }
+                if(keyCode == KeyEvent.KEYCODE_ENTER){
+                    Editable editable = ((EditText) view).getText();
+                    if (editable != null) {
+                        fetchArtists(editable.toString());
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
+
         // Get a reference to the ListView
         ListView listviewArtist = (ListView) rootView.findViewById(R.id.listview_artist);
         // Attach the adapter to the ListView
         listviewArtist.setAdapter(artistAdapter);
 
         return rootView;
+    }
+
+    /**
+     * Perform an async task to refresh the list of artists.
+     * @param artistName the string against which to match artist names.
+     */
+    private void fetchArtists(String artistName) {
+        if (artistName != null && !artistName.isEmpty()) {
+            new FetchArtistsTask().execute(artistName);
+        }
     }
 
     /**
@@ -131,15 +169,19 @@ public class ArtistListFragment extends Fragment {
 
             SpotifyService spotify = api.getService();
 
-            ArtistsPager artistsPager = spotify.searchArtists(params[0]);
-            if (artistsPager != null) {
-                Pager<Artist> artistPager = artistsPager.artists;
-                if (artistPager != null) {
-                    artistList = artistPager.items;
-                    for (Artist artist : artistList) {
-                        Log.d(LOG_TAG, "Artist name: " + artist.name);
+            try {
+                ArtistsPager artistsPager = spotify.searchArtists(params[0]);
+                if (artistsPager != null) {
+                    Pager<Artist> artistPager = artistsPager.artists;
+                    if (artistPager != null) {
+                        artistList = artistPager.items;
+                        for (Artist artist : artistList) {
+                            Log.d(LOG_TAG, "Artist name: " + artist.name);
+                        }
                     }
                 }
+            } catch (RetrofitError e) {
+                Log.e(LOG_TAG, "RetrofitError while fetching artist list: " + e);
             }
 
             return artistList;
@@ -173,4 +215,5 @@ public class ArtistListFragment extends Fragment {
         }
 
     }
+
 }
