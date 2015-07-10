@@ -1,5 +1,7 @@
 package uk.jumpingmouse.spotify;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
@@ -16,6 +18,10 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,18 +44,9 @@ public class ArtistListFragment extends Fragment {
 
     private EditText editArtistName;
 
-    private List<Artist> artistList;
-    //private List<Artist> adapterArtistList;
-    private List<String> adapterArtistList;
+    private List<AppArtist> appArtistList;
 
-    private ArrayAdapter<String> artistAdapter;
-    //private ArrayAdapter<Artist> artistAdapter;
-
-    /**
-     * Default constructor.
-     */
-    public ArtistListFragment() {
-    }
+    private ArrayAdapter<AppArtist> artistAdapter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -86,28 +83,10 @@ public class ArtistListFragment extends Fragment {
     public final View onCreateView(final LayoutInflater inflater, final ViewGroup container,
                                     final Bundle savedInstanceState) {
 
-        adapterArtistList = new ArrayList<>();
+        // Initialise the artist list and adapter
+        appArtistList = new ArrayList<>();
+        artistAdapter = new ArtistAdapter(getActivity(), appArtistList);
 
-        artistAdapter = new ArrayAdapter<>(
-                // the current context
-                getActivity(),
-                // the list item layout
-                R.layout.artist_list_item,
-                // the view to populate
-                R.id.txtArtist,
-                // the list data
-                adapterArtistList);
-/*
-        ArrayAdapter<Artist> artistAdapter = new ArrayAdapter<>(
-                // the current context
-                getActivity(),
-                // the list item layout
-                R.layout.artist_list_item,
-                // the view to populate
-                R.id.txtArtist,
-                // the list data
-                adapterArtistList);
-*/
         // Inflate the fragment
         View rootView = inflater.inflate(R.layout.artist_list, container, false);
 
@@ -150,12 +129,18 @@ public class ArtistListFragment extends Fragment {
     }
 
     /**
-     * Background task for getting a weather forecast from OpenWeatherMap.
+     * Background task for getting the list of matching artists from Spotify.
      */
-    public class FetchArtistsTask extends AsyncTask<String, Void, List<Artist>> {
+    public class FetchArtistsTask extends AsyncTask<String, Void, List<AppArtist>> {
 
+        /**
+         * Background task to fetch a list of artists from Spotify and return it in a custom list.
+         * @param params the parameters
+         * @return the list of artists as supplied by Spotify
+         */
         @Override
-        protected List<Artist> doInBackground(String[] params) {
+        protected List<AppArtist> doInBackground(String[] params) {
+            List<AppArtist> appArtistList = new ArrayList<>();
 
             if (params == null || params.length != 1) {
                 throw new InvalidParameterException("FetchArtistsTask requires a single parameter, the artist name");
@@ -164,7 +149,7 @@ public class ArtistListFragment extends Fragment {
             SpotifyApi api = new SpotifyApi();
 
             // Most (but not all) of the Spotify Web API endpoints require authorisation.
-            // If you know you'll only use the ones that don't require authorisation you can skip this step
+            // The ones that require authorisation need the following step:
             //api.setAccessToken("myAccessToken");
 
             SpotifyService spotify = api.getService();
@@ -174,9 +159,13 @@ public class ArtistListFragment extends Fragment {
                 if (artistsPager != null) {
                     Pager<Artist> artistPager = artistsPager.artists;
                     if (artistPager != null) {
-                        artistList = artistPager.items;
+                        List<Artist> artistList = artistPager.items;
                         for (Artist artist : artistList) {
                             Log.d(LOG_TAG, "Artist name: " + artist.name);
+                            // Fetch the image for the artist and store it as a bitmap
+                            Bitmap imageBitmap = getImageBitmapForArtist(artist);
+                            AppArtist appArtist = new AppArtist(artist.name, imageBitmap);
+                            appArtistList.add(appArtist);
                         }
                     }
                 }
@@ -184,36 +173,67 @@ public class ArtistListFragment extends Fragment {
                 Log.e(LOG_TAG, "RetrofitError while fetching artist list: " + e);
             }
 
-            return artistList;
+            return appArtistList;
         }
 
         /**
-         * <p>Runs on the UI thread after {@link #doInBackground}. The
-         * specified result is the value returned by {@link #doInBackground}.</p>
-         * <p/>
-         * <p>This method won't be invoked if the task was cancelled.</p>
-         * @param artistList The result of the operation computed by {@link #doInBackground}.
-         * @see #onPreExecute
-         * @see #doInBackground
-         * @see #onCancelled(Object)
+         * Runs on the UI thread after {@link #doInBackground}.
+         * This method won't be invoked if the task was cancelled.
+         * @param updatedAppArtistList the artist list, as returned by {@link #doInBackground}.
          */
         @Override
-        protected void onPostExecute(List<Artist> artistList) {
-            if (artistList == null) {
+        protected void onPostExecute(List<AppArtist> updatedAppArtistList) {
+            if (updatedAppArtistList == null) {
                 return;
             }
 
-            // Update the adapter's data object and notify the adapter
-            adapterArtistList.clear();
-            for (Artist artist : artistList) {
-                adapterArtistList.add(artist.name);
+            // update the adapter's data object
+            appArtistList.clear();
+            for (AppArtist appArtist : updatedAppArtistList) {
+                appArtistList.add(appArtist);
             }
+            // notify the adapter that its data object has changed
             artistAdapter.notifyDataSetChanged();
-
-            // the superclass method is currently empty
-            //super.onPostExecute(forecastData);
         }
 
+        /**
+         * Returns a bitmap image for an artist
+         * @param artist the spotify artist
+         * @return a bitmap image for the artist
+         */
+        private Bitmap getImageBitmapForArtist(Artist artist) {
+            if (artist != null
+                    && artist.images != null
+                    && artist.images.size() > 0
+                    && artist.images.get(0).url != null) {
+                return getBitmapFromURL(artist.images.get(0).url);
+            }
+            return null;
+        }
+
+        /**
+         * Returns an image at a URL as a bitmap.
+         * @param strUrl the URL of the image
+         * @return the image as a Bitmap
+         */
+        public Bitmap getBitmapFromURL(String strUrl) {
+            if (strUrl == null) {
+                return null;
+            }
+            try {
+                Log.d(LOG_TAG, "strUrl: " + strUrl);
+                URL url = new URL(strUrl);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setDoInput(true);
+                connection.connect();
+                InputStream input = connection.getInputStream();
+                return BitmapFactory.decodeStream(input);
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.e("Exception", e.getMessage());
+                return null;
+            }
+        }
     }
 
 }
