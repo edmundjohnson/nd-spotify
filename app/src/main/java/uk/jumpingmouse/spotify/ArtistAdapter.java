@@ -1,6 +1,7 @@
 package uk.jumpingmouse.spotify;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,15 +18,20 @@ import java.util.List;
  */
 public class ArtistAdapter extends ArrayAdapter<AppArtist> {
 
+    private final Activity context;
+    private final List<AppArtist> appArtistList;
+
     /**
      * Constructor which does not require a resource.
      * @param context the current context, used to inflate the layout file
-     * @param artists the list of artist objects to be displayed
+     * @param appArtistList the list of artists to be displayed
      */
-    public ArtistAdapter(Activity context, List<AppArtist> artists) {
+    public ArtistAdapter(Activity context, List<AppArtist> appArtistList) {
         // The second argument is used when the ArrayAdapter is populating a single TextView.
         // This adapter does not use the second argument, so it is set to 0.
-        super(context, 0, artists);
+        super(context, 0, appArtistList);
+        this.context = context;
+        this.appArtistList = appArtistList;
     }
 
     /**
@@ -36,7 +42,7 @@ public class ArtistAdapter extends ArrayAdapter<AppArtist> {
      * @return the View for the list item at the specified position
      */
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(final int position, View convertView, ViewGroup parent) {
         // Get the artist object from the list of artists
         AppArtist appArtist = getItem(position);
 
@@ -45,13 +51,34 @@ public class ArtistAdapter extends ArrayAdapter<AppArtist> {
             convertView = LayoutInflater.from(getContext()).inflate(R.layout.artist_list_item, parent, false);
         }
 
-        // Find the views in the list item layout and populate them with the artist info
+        // Populate the view elements in the list item layout with the artist info
         ImageView imgArtist = (ImageView) convertView.findViewById(R.id.imgArtist);
         imgArtist.setImageBitmap(appArtist.getImage());
         TextView txtArtist = (TextView) convertView.findViewById(R.id.txtArtist);
         txtArtist.setText(appArtist.getName());
 
+        // Set the click handler for the item
+        convertView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(final View view) {
+                handleItemClick(position);
+            }
+        });
+
         return convertView;
+    }
+
+    /**
+     * Handler method invoked when an item is clicked.
+     * @param position the item's position in the list
+     */
+    private void handleItemClick(final int position) {
+        // Display the top tracks for the selected artist in the track list activity,
+        // passing in the artist
+        Intent intent = new Intent(context, TrackListActivity.class);
+        intent.putExtra("ARTIST_ID", appArtistList.get(position).getId());
+        intent.putExtra("ARTIST_NAME", appArtistList.get(position).getName());
+        context.startActivity(intent);
     }
 
 }

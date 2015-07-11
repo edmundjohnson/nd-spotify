@@ -19,6 +19,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".TrackListActivity"
+            android:label="@string/track_list_activity_name" >
+        </activity>
     </application>
 
 </manifest>

@@ -3,6 +3,15 @@
     <string name="action_settings">Settings</string>
     <string name="action_refresh">Refresh</string>
 
+    <!-- Artist list -->
     <string name="hint_artist_name">Artist Name</string>
-    <string name="artist_image_description">Picture of the Artist</string>
+    <string name="artist_image_description">Picture of the artist</string>
+    <string name="no_matching_artists">There are no artists matching %s</string>
+
+    <!-- Track list -->
+    <string name="track_list_activity_name">Top Tracks</string>
+    <string name="album_image_description">Picture of the track\'s album</string>
+    <string name="no_matching_tracks_for_artist">There are no top tracks for %s</string>
+    <string name="unknown_album_name">Unknown</string>
+
 </resources>

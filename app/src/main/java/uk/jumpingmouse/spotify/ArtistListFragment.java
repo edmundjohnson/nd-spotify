@@ -1,10 +1,9 @@
 package uk.jumpingmouse.spotify;
 
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
-import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -17,11 +16,8 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.Toast;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +25,6 @@ import java.util.List;
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.Artist;
-
 import kaaes.spotify.webapi.android.models.ArtistsPager;
 import kaaes.spotify.webapi.android.models.Pager;
 import retrofit.RetrofitError;
@@ -132,6 +127,7 @@ public class ArtistListFragment extends Fragment {
      * Background task for getting the list of matching artists from Spotify.
      */
     public class FetchArtistsTask extends AsyncTask<String, Void, List<AppArtist>> {
+        private String searchString = null;
 
         /**
          * Background task to fetch a list of artists from Spotify and return it in a custom list.
@@ -145,34 +141,15 @@ public class ArtistListFragment extends Fragment {
             if (params == null || params.length != 1) {
                 throw new InvalidParameterException("FetchArtistsTask requires a single parameter, the artist name");
             }
+            searchString = params[0];
 
-            SpotifyApi api = new SpotifyApi();
-
-            // Most (but not all) of the Spotify Web API endpoints require authorisation.
-            // The ones that require authorisation need the following step:
-            //api.setAccessToken("myAccessToken");
-
-            SpotifyService spotify = api.getService();
-
-            try {
-                ArtistsPager artistsPager = spotify.searchArtists(params[0]);
-                if (artistsPager != null) {
-                    Pager<Artist> artistPager = artistsPager.artists;
-                    if (artistPager != null) {
-                        List<Artist> artistList = artistPager.items;
-                        for (Artist artist : artistList) {
-                            Log.d(LOG_TAG, "Artist name: " + artist.name);
-                            // Fetch the image for the artist and store it as a bitmap
-                            Bitmap imageBitmap = getImageBitmapForArtist(artist);
-                            AppArtist appArtist = new AppArtist(artist.name, imageBitmap);
-                            appArtistList.add(appArtist);
-                        }
-                    }
+            // Fetch the list of artists from Spotify and convert them into local artists
+            List<Artist> artistList = getSpotifyArtists(searchString);
+            if (artistList != null) {
+                for (Artist artist : artistList) {
+                    appArtistList.add(spotifyArtistToAppArtist(artist));
                 }
-            } catch (RetrofitError e) {
-                Log.e(LOG_TAG, "RetrofitError while fetching artist list: " + e);
             }
-
             return appArtistList;
         }
 
@@ -183,7 +160,9 @@ public class ArtistListFragment extends Fragment {
          */
         @Override
         protected void onPostExecute(List<AppArtist> updatedAppArtistList) {
-            if (updatedAppArtistList == null) {
+            if (updatedAppArtistList == null || updatedAppArtistList.size() == 0) {
+                String message = String.format(getString(R.string.no_matching_artists), searchString);
+                Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -197,6 +176,37 @@ public class ArtistListFragment extends Fragment {
         }
 
         /**
+         * Returns a list of the Spotify artists whose names match a supplied string.
+         * @param strSearch the string to match against
+         * @return a list of the Spotify artists whose names match the search string
+         */
+        private List<Artist> getSpotifyArtists(String strSearch) {
+            try {
+                ArtistsPager artistsPager = getSpotifyService().searchArtists(strSearch);
+                if (artistsPager != null) {
+                    Pager<Artist> artistPager = artistsPager.artists;
+                    if (artistPager != null) {
+                        return artistPager.items;
+                    }
+                }
+            } catch (RetrofitError e) {
+                Log.e(LOG_TAG, "RetrofitError while fetching artist list: " + e);
+            }
+            return null;
+        }
+
+        /**
+         * Creates and returns a local artist corresponding to a supplied Spotify artist.
+         * @param artist the Spotify artist
+         * @return a local artist corresponding to the supplied Spotify artist
+         */
+        private AppArtist spotifyArtistToAppArtist(Artist artist) {
+            // Fetch the image for the artist and store it as a bitmap
+            Bitmap imageBitmap = getImageBitmapForArtist(artist);
+            return new AppArtist(artist.id, artist.name, imageBitmap);
+        }
+
+        /**
          * Returns a bitmap image for an artist
          * @param artist the spotify artist
          * @return a bitmap image for the artist
@@ -205,34 +215,25 @@ public class ArtistListFragment extends Fragment {
             if (artist != null
                     && artist.images != null
                     && artist.images.size() > 0
-                    && artist.images.get(0).url != null) {
-                return getBitmapFromURL(artist.images.get(0).url);
+                    && artist.images.get(0).url != null
+                    && !artist.images.get(0).url.trim().isEmpty()) {
+                    return NetUtil.getBitmapFromURL(artist.images.get(0).url);
             }
             return null;
         }
 
         /**
-         * Returns an image at a URL as a bitmap.
-         * @param strUrl the URL of the image
-         * @return the image as a Bitmap
+         * Return a SpotifyService object.
+         * @return a SpotifyService object
          */
-        public Bitmap getBitmapFromURL(String strUrl) {
-            if (strUrl == null) {
-                return null;
-            }
-            try {
-                Log.d(LOG_TAG, "strUrl: " + strUrl);
-                URL url = new URL(strUrl);
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setDoInput(true);
-                connection.connect();
-                InputStream input = connection.getInputStream();
-                return BitmapFactory.decodeStream(input);
-            } catch (IOException e) {
-                e.printStackTrace();
-                Log.e("Exception", e.getMessage());
-                return null;
-            }
+        private SpotifyService getSpotifyService() {
+            SpotifyApi spotifyApi = new SpotifyApi();
+
+            // Most (but not all) of the Spotify Web API endpoints require authorisation.
+            // The ones that require authorisation need the following step:
+            //spotifyApi.setAccessToken("myAccessToken");
+
+            return spotifyApi.getService();
         }
     }
 

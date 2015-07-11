@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -11,8 +12,8 @@
         android:layout_width="@android:dimen/notification_large_icon_width"
         android:layout_height="@android:dimen/notification_large_icon_height"
         android:layout_gravity="center_vertical|start"
-        android:src="@mipmap/ic_launcher"
-        android:contentDescription="Album Name"/>
+        android:contentDescription="@string/album_image_description"
+        tools:src="@mipmap/ic_launcher" />
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -24,18 +25,18 @@
             android:id="@+id/txtTrack"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text="Track Name"
+            android:textAppearance="?android:attr/textAppearanceMedium"
             android:layout_marginStart="@dimen/abc_list_item_padding_horizontal_material"
-            android:layout_marginLeft="@dimen/abc_list_item_padding_horizontal_material" />
+            android:layout_marginLeft="@dimen/abc_list_item_padding_horizontal_material"
+            tools:text="Track Name" />
         <TextView
             android:id="@+id/txtAlbum"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Album Name"
+            android:textAppearance="?android:attr/textAppearanceSmall"
             android:layout_marginStart="@dimen/abc_list_item_padding_horizontal_material"
-            android:layout_marginLeft="@dimen/abc_list_item_padding_horizontal_material" />
+            android:layout_marginLeft="@dimen/abc_list_item_padding_horizontal_material"
+            tools:text="Album Name" />
 
     </LinearLayout>
 
