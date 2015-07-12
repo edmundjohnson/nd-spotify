@@ -1,6 +1,5 @@
 package uk.jumpingmouse.spotify;
 
-import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -23,7 +22,6 @@ import java.util.Map;
 
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
-import kaaes.spotify.webapi.android.models.AlbumSimple;
 import kaaes.spotify.webapi.android.models.Track;
 import kaaes.spotify.webapi.android.models.Tracks;
 import retrofit.RetrofitError;
@@ -45,10 +43,10 @@ public class TrackListFragment extends Fragment {
     private String artistName;
 
     /** The list of top tracks for the artist. */
-    private List<AppTrack> appTrackList;
+    private List<Track> trackList;
 
     /** The adapter for the track list. */
-    private ArrayAdapter<AppTrack> trackAdapter;
+    private ArrayAdapter<Track> trackAdapter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -87,8 +85,8 @@ public class TrackListFragment extends Fragment {
                                     final Bundle savedInstanceState) {
 
         // Initialise the track list and adapter
-        appTrackList = new ArrayList<>();
-        trackAdapter = new TrackAdapter(getActivity(), appTrackList);
+        trackList = new ArrayList<>();
+        trackAdapter = new TrackAdapter(getActivity(), trackList);
 
         // Inflate the fragment
         View rootView = inflater.inflate(R.layout.track_list, container, false);
@@ -117,7 +115,7 @@ public class TrackListFragment extends Fragment {
     /**
      * Background task for getting the list of top tracks for an artist from Spotify.
      */
-    public class FetchTracksTask extends AsyncTask<String, Void, List<AppTrack>> {
+    public class FetchTracksTask extends AsyncTask<String, Void, List<Track>> {
 
         /**
          * Background task to fetch a list of the top tracks for an artist from Spotify
@@ -126,43 +124,34 @@ public class TrackListFragment extends Fragment {
          * @return the list of tracks as supplied by Spotify
          */
         @Override
-        protected List<AppTrack> doInBackground(String[] params) {
-            List<AppTrack> appTrackList = new ArrayList<>();
-
+        protected List<Track> doInBackground(String[] params) {
             // Check we have the artist id as a parameter
             if (params == null || params.length != 1) {
                 throw new InvalidParameterException("FetchTracksTask requires a single parameter, the artist id");
             }
             artistId = params[0];
 
-            // Get the Spotify top tracks for the artist and create local tracks from them
-            List<Track> trackList = getSpotifyArtistTopTracks(artistId, QUERY_COUNTRY_CODE);
-            if (trackList != null) {
-                for (Track track : trackList) {
-                    appTrackList.add(spotifyTrackToAppTrack(track));
-                }
-            }
-
-            return appTrackList;
+            // Get the Spotify top tracks for the artist and return them
+            return getSpotifyArtistTopTracks(artistId, QUERY_COUNTRY_CODE);
         }
 
         /**
          * Runs on the UI thread after {@link #doInBackground}.
          * This method won't be invoked if the task was cancelled.
-         * @param updatedAppTrackList the track list, as returned by {@link #doInBackground}.
+         * @param updatedTrackList the track list, as returned by {@link #doInBackground}.
          */
         @Override
-        protected void onPostExecute(List<AppTrack> updatedAppTrackList) {
-            if (updatedAppTrackList == null || updatedAppTrackList.size() == 0) {
+        protected void onPostExecute(List<Track> updatedTrackList) {
+            if (updatedTrackList == null || updatedTrackList.size() == 0) {
                 String message = String.format(getString(R.string.no_matching_tracks_for_artist), artistName);
                 Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
                 return;
             }
 
             // update the adapter's data object
-            appTrackList.clear();
-            for (AppTrack appTrack : updatedAppTrackList) {
-                appTrackList.add(appTrack);
+            trackList.clear();
+            for (Track track : updatedTrackList) {
+                trackList.add(track);
             }
             // notify the adapter that its data object has changed
             trackAdapter.notifyDataSetChanged();
@@ -186,50 +175,6 @@ public class TrackListFragment extends Fragment {
                 Log.e(LOG_TAG, "RetrofitError while fetching track list: " + e);
             }
             return null;
-        }
-
-        /**
-         * Creates and returns a local track corresponding to a supplied Spotify track.
-         * @param track the Spotify track
-         * @return a local track corresponding to the supplied Spotify track
-         */
-        private AppTrack spotifyTrackToAppTrack(Track track) {
-            // Fetch the image for the track's album and store it as a bitmap
-            Bitmap imageBitmap = getImageBitmapForAlbum(track.album);
-            return new AppTrack(track.id, track.name, getAlbumName(track), imageBitmap);
-        }
-
-        /**
-         * Returns a bitmap image for an album.
-         * @param album the spotify album
-         * @return a bitmap image for the album
-         */
-        private Bitmap getImageBitmapForAlbum(AlbumSimple album) {
-            if (album != null
-                    && album.images != null
-                    && album.images.size() > 0
-                    && album.images.get(0).url != null
-                    && !album.images.get(0).url.trim().isEmpty()) {
-                return NetUtil.getBitmapFromURL(album.images.get(0).url);
-            }
-            return null;
-        }
-
-        /**
-         * Returns the album name for a spotify track.
-         * @param track the spotify track
-         * @return the album name for the spotify track, or "Unknown" if this could not
-         *         be determined
-         */
-        private String getAlbumName(Track track) {
-            if (track != null
-                    && track.album != null
-                    && track.album.name != null
-                    && !track.album.name.trim().isEmpty()) {
-                return track.album.name;
-            } else {
-                return getString(R.string.unknown_album_name);
-            }
         }
 
         /**

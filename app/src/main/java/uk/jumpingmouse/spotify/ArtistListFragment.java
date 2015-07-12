@@ -1,6 +1,5 @@
 package uk.jumpingmouse.spotify;
 
-import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -39,9 +38,9 @@ public class ArtistListFragment extends Fragment {
 
     private EditText editArtistName;
 
-    private List<AppArtist> appArtistList;
+    private List<Artist> artistList;
 
-    private ArrayAdapter<AppArtist> artistAdapter;
+    private ArrayAdapter<Artist> artistAdapter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -79,8 +78,8 @@ public class ArtistListFragment extends Fragment {
                                     final Bundle savedInstanceState) {
 
         // Initialise the artist list and adapter
-        appArtistList = new ArrayList<>();
-        artistAdapter = new ArtistAdapter(getActivity(), appArtistList);
+        artistList = new ArrayList<>();
+        artistAdapter = new ArtistAdapter(getActivity(), artistList);
 
         // Inflate the fragment
         View rootView = inflater.inflate(R.layout.artist_list, container, false);
@@ -113,6 +112,14 @@ public class ArtistListFragment extends Fragment {
         return rootView;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (editArtistName != null && editArtistName.getText() != null) {
+            fetchArtists(editArtistName.getText().toString());
+        }
+    }
+
     /**
      * Perform an async task to refresh the list of artists.
      * @param artistName the string against which to match artist names.
@@ -126,7 +133,7 @@ public class ArtistListFragment extends Fragment {
     /**
      * Background task for getting the list of matching artists from Spotify.
      */
-    public class FetchArtistsTask extends AsyncTask<String, Void, List<AppArtist>> {
+    public class FetchArtistsTask extends AsyncTask<String, Void, List<Artist>> {
         private String searchString = null;
 
         /**
@@ -135,41 +142,33 @@ public class ArtistListFragment extends Fragment {
          * @return the list of artists as supplied by Spotify
          */
         @Override
-        protected List<AppArtist> doInBackground(String[] params) {
-            List<AppArtist> appArtistList = new ArrayList<>();
-
+        protected List<Artist> doInBackground(String[] params) {
             if (params == null || params.length != 1) {
                 throw new InvalidParameterException("FetchArtistsTask requires a single parameter, the artist name");
             }
             searchString = params[0];
 
-            // Fetch the list of artists from Spotify and convert them into local artists
-            List<Artist> artistList = getSpotifyArtists(searchString);
-            if (artistList != null) {
-                for (Artist artist : artistList) {
-                    appArtistList.add(spotifyArtistToAppArtist(artist));
-                }
-            }
-            return appArtistList;
+            // Fetch the list of artists from Spotify and return it
+            return getSpotifyArtists(searchString);
         }
 
         /**
          * Runs on the UI thread after {@link #doInBackground}.
          * This method won't be invoked if the task was cancelled.
-         * @param updatedAppArtistList the artist list, as returned by {@link #doInBackground}.
+         * @param updatedArtistList the artist list, as returned by {@link #doInBackground}.
          */
         @Override
-        protected void onPostExecute(List<AppArtist> updatedAppArtistList) {
-            if (updatedAppArtistList == null || updatedAppArtistList.size() == 0) {
+        protected void onPostExecute(List<Artist> updatedArtistList) {
+            if (updatedArtistList == null || updatedArtistList.size() == 0) {
                 String message = String.format(getString(R.string.no_matching_artists), searchString);
                 Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
                 return;
             }
 
             // update the adapter's data object
-            appArtistList.clear();
-            for (AppArtist appArtist : updatedAppArtistList) {
-                appArtistList.add(appArtist);
+            artistList.clear();
+            for (Artist artist : updatedArtistList) {
+                artistList.add(artist);
             }
             // notify the adapter that its data object has changed
             artistAdapter.notifyDataSetChanged();
@@ -191,33 +190,6 @@ public class ArtistListFragment extends Fragment {
                 }
             } catch (RetrofitError e) {
                 Log.e(LOG_TAG, "RetrofitError while fetching artist list: " + e);
-            }
-            return null;
-        }
-
-        /**
-         * Creates and returns a local artist corresponding to a supplied Spotify artist.
-         * @param artist the Spotify artist
-         * @return a local artist corresponding to the supplied Spotify artist
-         */
-        private AppArtist spotifyArtistToAppArtist(Artist artist) {
-            // Fetch the image for the artist and store it as a bitmap
-            Bitmap imageBitmap = getImageBitmapForArtist(artist);
-            return new AppArtist(artist.id, artist.name, imageBitmap);
-        }
-
-        /**
-         * Returns a bitmap image for an artist
-         * @param artist the spotify artist
-         * @return a bitmap image for the artist
-         */
-        private Bitmap getImageBitmapForArtist(Artist artist) {
-            if (artist != null
-                    && artist.images != null
-                    && artist.images.size() > 0
-                    && artist.images.get(0).url != null
-                    && !artist.images.get(0).url.trim().isEmpty()) {
-                    return NetUtil.getBitmapFromURL(artist.images.get(0).url);
             }
             return null;
         }

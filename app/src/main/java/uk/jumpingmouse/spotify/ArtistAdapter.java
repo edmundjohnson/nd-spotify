@@ -9,29 +9,36 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.squareup.picasso.Picasso;
+
 import java.util.List;
+
+import kaaes.spotify.webapi.android.models.Artist;
 
 
 /**
  * An adapter for the list items in the artist list.
  * @author Edmund Johnson
  */
-public class ArtistAdapter extends ArrayAdapter<AppArtist> {
+public class ArtistAdapter extends ArrayAdapter<Artist> {
+
+    private static final int THUMBNAIL_SIZE_MIN = 180;
+    private static final int THUMBNAIL_SIZE_MAX = 220;
 
     private final Activity context;
-    private final List<AppArtist> appArtistList;
+    private final List<Artist> artistList;
 
     /**
      * Constructor which does not require a resource.
      * @param context the current context, used to inflate the layout file
-     * @param appArtistList the list of artists to be displayed
+     * @param artistList the list of artists to be displayed
      */
-    public ArtistAdapter(Activity context, List<AppArtist> appArtistList) {
+    public ArtistAdapter(Activity context, List<Artist> artistList) {
         // The second argument is used when the ArrayAdapter is populating a single TextView.
         // This adapter does not use the second argument, so it is set to 0.
-        super(context, 0, appArtistList);
+        super(context, 0, artistList);
         this.context = context;
-        this.appArtistList = appArtistList;
+        this.artistList = artistList;
     }
 
     /**
@@ -44,18 +51,20 @@ public class ArtistAdapter extends ArrayAdapter<AppArtist> {
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {
         // Get the artist object from the list of artists
-        AppArtist appArtist = getItem(position);
+        Artist artist = getItem(position);
 
         // If the recycled view is null, inflate the list item layout and assign it
         if (convertView == null) {
             convertView = LayoutInflater.from(getContext()).inflate(R.layout.artist_list_item, parent, false);
         }
 
-        // Populate the view elements in the list item layout with the artist info
+        // Populate the image view with the artist image
         ImageView imgArtist = (ImageView) convertView.findViewById(R.id.imgArtist);
-        imgArtist.setImageBitmap(appArtist.getImage());
+        String imageUrl = getImageUrlForArtist(artist, THUMBNAIL_SIZE_MIN, THUMBNAIL_SIZE_MAX);
+        Picasso.with(context).load(imageUrl).into(imgArtist);
+        // Populate the text view with the artist name
         TextView txtArtist = (TextView) convertView.findViewById(R.id.txtArtist);
-        txtArtist.setText(appArtist.getName());
+        txtArtist.setText(artist.name);
 
         // Set the click handler for the item
         convertView.setOnClickListener(new View.OnClickListener() {
@@ -69,15 +78,32 @@ public class ArtistAdapter extends ArrayAdapter<AppArtist> {
     }
 
     /**
+     * Returns an image URL for a Spotify artist
+     * @param artist the Spotify artist
+     * @param sizeMin the minimum pixel size desired for the image height and width
+     * @param sizeMax the maximum pixel size desired for the image height and width
+     * @return a URL for an image for the Spotify artist.
+     *         The URL for the first image matching the size desired is returned if found,
+     *         otherwise the URL for the first image is returned.
+     *         If no images are found, null is returned.
+     */
+    private String getImageUrlForArtist(Artist artist, int sizeMin, int sizeMax) {
+        if (artist == null) {
+            return null;
+        }
+        return SpotifyUtil.getImageUrl(artist.images, sizeMin, sizeMax);
+    }
+
+    /**
      * Handler method invoked when an item is clicked.
      * @param position the item's position in the list
      */
     private void handleItemClick(final int position) {
         // Display the top tracks for the selected artist in the track list activity,
-        // passing in the artist
+        // passing in the artist info
         Intent intent = new Intent(context, TrackListActivity.class);
-        intent.putExtra("ARTIST_ID", appArtistList.get(position).getId());
-        intent.putExtra("ARTIST_NAME", appArtistList.get(position).getName());
+        intent.putExtra("ARTIST_ID", artistList.get(position).id);
+        intent.putExtra("ARTIST_NAME", artistList.get(position).name);
         context.startActivity(intent);
     }
 
