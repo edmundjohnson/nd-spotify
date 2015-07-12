@@ -1,7 +1,10 @@
 package uk.jumpingmouse.spotify;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -35,7 +38,6 @@ public class TrackListFragment extends Fragment {
     private static final String LOG_TAG = TrackListFragment.class.getSimpleName();
 
     private static final String QUERY_COUNTRY_KEY = "country";
-    private static final String QUERY_COUNTRY_CODE = "GB";
 
     /** The id of the artist whose top tracks are to be listed. */
     private String artistId;
@@ -130,9 +132,23 @@ public class TrackListFragment extends Fragment {
                 throw new InvalidParameterException("FetchTracksTask requires a single parameter, the artist id");
             }
             artistId = params[0];
+            String countryCode = getPreference(getActivity(),
+                    R.string.pref_country_code_key, R.string.pref_country_code_default);
 
             // Get the Spotify top tracks for the artist and return them
-            return getSpotifyArtistTopTracks(artistId, QUERY_COUNTRY_CODE);
+            return getSpotifyArtistTopTracks(artistId, countryCode);
+        }
+
+        /**
+         * Returns a current preference.
+         * @param context the context
+         * @param key the string resource id of the preference's key
+         * @param defaultValue the string resource id of the preference's default value
+         * @return the current preference setting for the preference
+         */
+        private String getPreference(Context context, int key, int defaultValue) {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+            return prefs.getString(getString(key), getString(defaultValue));
         }
 
         /**

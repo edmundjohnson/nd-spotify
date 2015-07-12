@@ -22,9 +22,6 @@ import kaaes.spotify.webapi.android.models.Artist;
  */
 public class ArtistAdapter extends ArrayAdapter<Artist> {
 
-    private static final int THUMBNAIL_SIZE_MIN = 180;
-    private static final int THUMBNAIL_SIZE_MAX = 220;
-
     private final Activity context;
     private final List<Artist> artistList;
 
@@ -60,7 +57,7 @@ public class ArtistAdapter extends ArrayAdapter<Artist> {
 
         // Populate the image view with the artist image
         ImageView imgArtist = (ImageView) convertView.findViewById(R.id.imgArtist);
-        String imageUrl = getImageUrlForArtist(artist, THUMBNAIL_SIZE_MIN, THUMBNAIL_SIZE_MAX);
+        String imageUrl = getSmallImageUrlForArtist(artist);
         Picasso.with(context).load(imageUrl).into(imgArtist);
         // Populate the text view with the artist name
         TextView txtArtist = (TextView) convertView.findViewById(R.id.txtArtist);
@@ -78,20 +75,15 @@ public class ArtistAdapter extends ArrayAdapter<Artist> {
     }
 
     /**
-     * Returns an image URL for a Spotify artist
+     * Returns a URL for a small image for a Spotify artist
      * @param artist the Spotify artist
-     * @param sizeMin the minimum pixel size desired for the image height and width
-     * @param sizeMax the maximum pixel size desired for the image height and width
-     * @return a URL for an image for the Spotify artist.
-     *         The URL for the first image matching the size desired is returned if found,
-     *         otherwise the URL for the first image is returned.
-     *         If no images are found, null is returned.
+     * @return a URL for a small image for the Spotify artist.
      */
-    private String getImageUrlForArtist(Artist artist, int sizeMin, int sizeMax) {
+    private String getSmallImageUrlForArtist(Artist artist) {
         if (artist == null) {
             return null;
         }
-        return SpotifyUtil.getImageUrl(artist.images, sizeMin, sizeMax);
+        return SpotifyUtil.getSmallImageUrl(artist.images);
     }
 
     /**

@@ -22,9 +22,6 @@ import kaaes.spotify.webapi.android.models.Track;
  */
 public class TrackAdapter extends ArrayAdapter<Track> {
 
-    private static final int THUMBNAIL_SIZE_MIN = 180;
-    private static final int THUMBNAIL_SIZE_MAX = 220;
-
     private final Activity context;
 
     /**
@@ -58,8 +55,9 @@ public class TrackAdapter extends ArrayAdapter<Track> {
 
         // Populate the image view element with the track image
         ImageView imgAlbum = (ImageView) convertView.findViewById(R.id.imgAlbum);
-        String imageUrl = getImageUrlForAlbum(track.album, THUMBNAIL_SIZE_MIN, THUMBNAIL_SIZE_MAX);
+        String imageUrl = getSmallImageUrlForAlbum(track.album);
         Picasso.with(context).load(imageUrl).into(imgAlbum);
+
         // Populate the text view elements with the track name and album name
         TextView txtTrack = (TextView) convertView.findViewById(R.id.txtTrack);
         txtTrack.setText(track.name);
@@ -70,20 +68,15 @@ public class TrackAdapter extends ArrayAdapter<Track> {
     }
 
     /**
-     * Returns a URL for an image for a Spotify album.
+     * Returns a URL for a small image for a Spotify album.
      * @param album the Spotify album
-     * @param sizeMin the minimum pixel size desired for the image height and width
-     * @param sizeMax the maximum pixel size desired for the image height and width
-     * @return a URL for an image for the Spotify album.
-     *         The URL for the first image matching the size desired is returned if found,
-     *         otherwise the URL for the first image is returned.
-     *         If no images are found, null is returned.
+     * @return a URL for a small image for the Spotify album.
      */
-    private String getImageUrlForAlbum(AlbumSimple album, int sizeMin, int sizeMax) {
+    private String getSmallImageUrlForAlbum(AlbumSimple album) {
         if (album == null) {
             return null;
         }
-        return SpotifyUtil.getImageUrl(album.images, sizeMin, sizeMax);
+        return SpotifyUtil.getSmallImageUrl(album.images);
     }
 
     /**

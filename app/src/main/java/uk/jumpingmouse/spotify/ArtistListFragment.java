@@ -116,7 +116,8 @@ public class ArtistListFragment extends Fragment {
     public void onResume() {
         super.onResume();
         if (editArtistName != null && editArtistName.getText() != null) {
-            fetchArtists(editArtistName.getText().toString());
+            String artistName = editArtistName.getText().toString();
+            fetchArtists(artistName);
         }
     }
 
@@ -153,6 +154,26 @@ public class ArtistListFragment extends Fragment {
         }
 
         /**
+         * Returns a list of the Spotify artists whose names match a supplied string.
+         * @param strSearch the string to match against
+         * @return a list of the Spotify artists whose names match the search string
+         */
+        private List<Artist> getSpotifyArtists(String strSearch) {
+            try {
+                ArtistsPager artistsPager = getSpotifyService().searchArtists(strSearch);
+                if (artistsPager != null) {
+                    Pager<Artist> artistPager = artistsPager.artists;
+                    if (artistPager != null) {
+                        return artistPager.items;
+                    }
+                }
+            } catch (RetrofitError e) {
+                Log.e(LOG_TAG, "RetrofitError while fetching artist list: " + e);
+            }
+            return null;
+        }
+
+        /**
          * Runs on the UI thread after {@link #doInBackground}.
          * This method won't be invoked if the task was cancelled.
          * @param updatedArtistList the artist list, as returned by {@link #doInBackground}.
@@ -172,26 +193,6 @@ public class ArtistListFragment extends Fragment {
             }
             // notify the adapter that its data object has changed
             artistAdapter.notifyDataSetChanged();
-        }
-
-        /**
-         * Returns a list of the Spotify artists whose names match a supplied string.
-         * @param strSearch the string to match against
-         * @return a list of the Spotify artists whose names match the search string
-         */
-        private List<Artist> getSpotifyArtists(String strSearch) {
-            try {
-                ArtistsPager artistsPager = getSpotifyService().searchArtists(strSearch);
-                if (artistsPager != null) {
-                    Pager<Artist> artistPager = artistsPager.artists;
-                    if (artistPager != null) {
-                        return artistPager.items;
-                    }
-                }
-            } catch (RetrofitError e) {
-                Log.e(LOG_TAG, "RetrofitError while fetching artist list: " + e);
-            }
-            return null;
         }
 
         /**

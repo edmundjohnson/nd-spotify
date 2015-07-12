@@ -1,0 +1,26 @@
+<resources>
+    <string name="title_activity_settings">Settings</string>
+
+    <!-- Strings related to Settings -->
+
+    <!-- General settings -->
+    <!--
+    <string name="pref_header_general">General</string>
+    -->
+
+    <!-- Country code -->
+    <string name="pref_country_code_title">Select the country to use for top tracks</string>
+    <string name="pref_country_code_key">country_code_key</string>
+    <string-array name="pref_country_code_list_titles">
+        <item>United Kingdom</item>
+        <item>USA</item>
+        <item>Greece</item>
+    </string-array>
+    <string-array name="pref_country_code_list_values">
+        <item>GB</item>
+        <item>US</item>
+        <item>GR</item>
+    </string-array>
+    <string name="pref_country_code_default">GB</string>
+
+</resources>
