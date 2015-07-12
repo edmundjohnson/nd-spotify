@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -182,7 +183,9 @@ public class ArtistListFragment extends Fragment {
         protected void onPostExecute(List<Artist> updatedArtistList) {
             if (updatedArtistList == null || updatedArtistList.size() == 0) {
                 String message = String.format(getString(R.string.no_matching_artists), searchString);
-                Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
+                Toast toast = Toast.makeText(getActivity(), message, Toast.LENGTH_LONG);
+                toast.setGravity(Gravity.CENTER, 0, 0);
+                toast.show();
                 return;
             }
 

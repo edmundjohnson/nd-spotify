@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -160,7 +161,9 @@ public class TrackListFragment extends Fragment {
         protected void onPostExecute(List<Track> updatedTrackList) {
             if (updatedTrackList == null || updatedTrackList.size() == 0) {
                 String message = String.format(getString(R.string.no_matching_tracks_for_artist), artistName);
-                Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
+                Toast toast = Toast.makeText(getActivity(), message, Toast.LENGTH_LONG);
+                toast.setGravity(Gravity.CENTER, 0, 0);
+                toast.show();
                 return;
             }
 

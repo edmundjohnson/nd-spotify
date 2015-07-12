@@ -6,12 +6,12 @@
     <!-- Artist list -->
     <string name="hint_artist_name">Artist Name</string>
     <string name="artist_image_description">Picture of the artist</string>
-    <string name="no_matching_artists">There are no artists matching %s</string>
+    <string name="no_matching_artists">No artists found matching \"%s\". Try changing your search criteria.</string>
 
     <!-- Track list -->
     <string name="track_list_activity_name">Top 10 Tracks</string>
     <string name="album_image_description">Picture of the track\'s album</string>
-    <string name="no_matching_tracks_for_artist">There are no top tracks for %s</string>
+    <string name="no_matching_tracks_for_artist">No tracks found for %s. Try selecting a different artist.</string>
     <string name="unknown_album_name">Unknown</string>
 
 </resources>
