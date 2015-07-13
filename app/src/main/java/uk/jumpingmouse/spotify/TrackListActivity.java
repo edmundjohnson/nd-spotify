@@ -17,9 +17,9 @@ public class TrackListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_track_list);
 
-        String artistName = getIntent().getExtras().getString("ARTIST_NAME");
+        AppArtist artist = (AppArtist) getIntent().getExtras().get("ARTIST");
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setSubtitle(artistName);
+            getSupportActionBar().setSubtitle(artist.getName());
         }
     }
 

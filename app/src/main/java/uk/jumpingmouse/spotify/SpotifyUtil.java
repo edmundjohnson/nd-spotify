@@ -2,6 +2,7 @@ package uk.jumpingmouse.spotify;
 
 import java.util.List;
 
+import kaaes.spotify.webapi.android.models.AlbumSimple;
 import kaaes.spotify.webapi.android.models.Image;
 import kaaes.spotify.webapi.android.models.Track;
 
@@ -22,13 +23,54 @@ public class SpotifyUtil {
     }
 
     /**
+     * Returns the album name for a spotify track.
+     * @param track the spotify track
+     * @return the album name for the spotify track, or "Unknown" if this could not
+     *         be determined
+     */
+    public static String getAlbumName(Track track, String defaultName) {
+        if (track != null
+                && track.album != null
+                && track.album.name != null
+                && !track.album.name.trim().isEmpty()) {
+            return track.album.name;
+        } else {
+            return defaultName;
+        }
+    }
+
+    /**
+     * Returns a URL for a small image for a Spotify album.
+     * @param album the Spotify album
+     * @return a URL for a small image for the Spotify album.
+     */
+    public static String getImageUrlSmallForAlbum(AlbumSimple album) {
+        if (album == null) {
+            return null;
+        }
+        return SpotifyUtil.getImageUrlSmall(album.images);
+    }
+
+    /**
+     * Returns a URL for a small image for a Spotify album.
+     * @param album the Spotify album
+     * @return a URL for a small image for the Spotify album.
+     */
+    public static String getImageUrlLargeForAlbum(AlbumSimple album) {
+        if (album == null) {
+            return null;
+        }
+        return SpotifyUtil.getImageUrlLarge(album.images);
+    }
+
+    /**
      * Returns a URL for a small image from a list of image objects.
      * @param imageList the list of images
      * @return The URL for a small image from the list is returned if found,
      *         otherwise the URL for any image is returned.
      *         If no images are found, null is returned.
      */
-    public static String getSmallImageUrl(List<Image> imageList) {
+    public static String getImageUrlSmall(List<Image> imageList) {
         return getImageUrl(imageList, SMALL_IMAGE_SIZE_MIN, SMALL_IMAGE_SIZE_MAX);
     }
 
@@ -39,7 +81,7 @@ public class SpotifyUtil {
      *         otherwise the URL for any image is returned.
      *         If no images are found, null is returned.
      */
-    public static String getLargeImageUrl(List<Image> imageList) {
+    private static String getImageUrlLarge(List<Image> imageList) {
         return getImageUrl(imageList, LARGE_IMAGE_SIZE_MIN, LARGE_IMAGE_SIZE_MAX);
     }
 
@@ -66,13 +108,4 @@ public class SpotifyUtil {
         return null;
     }
 
-    /**
-     * Returns the preview URL for a Spotify track.
-     * @param track the Spotify track
-     * @return the preview URL for the Spotify track
-     */
-    public static String getPreviewUrl(Track track) {
-        return track == null ? null : track.preview_url;
-
-    }
 }

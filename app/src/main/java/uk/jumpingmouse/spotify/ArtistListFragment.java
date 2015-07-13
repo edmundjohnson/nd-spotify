@@ -2,10 +2,10 @@ package uk.jumpingmouse.spotify;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -16,7 +16,6 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
@@ -37,17 +36,102 @@ public class ArtistListFragment extends Fragment {
     /** The log tag for this class. */
     private static final String LOG_TAG = ArtistListFragment.class.getSimpleName();
 
+    private static final String KEY_SEARCH_STRING = "SEARCH_STRING";
+    private static final String KEY_ARTIST_LIST = "ARTIST_LIST";
+
     private EditText editArtistName;
 
-    private List<Artist> artistList;
-
-    private ArrayAdapter<Artist> artistAdapter;
+    private ArrayList<AppArtist> appArtistList;
+    private ArrayAdapter<AppArtist> artistAdapter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // Indicate that the fragment can handle menu events
         this.setHasOptionsMenu(true);
+    }
+
+    @Override
+    public final View onCreateView(final LayoutInflater inflater, final ViewGroup container,
+                                    final Bundle savedInstanceState) {
+
+        // Initialise the artist list and adapter
+        appArtistList = new ArrayList<>();
+        artistAdapter = new ArtistAdapter(getActivity(), appArtistList);
+
+        // Inflate the fragment
+        View rootView = inflater.inflate(R.layout.artist_list, container, false);
+
+        // Get a reference to the artist name edit text box
+        editArtistName = (EditText) rootView.findViewById(R.id.editArtistName);
+
+        editArtistName.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View view, int keyCode, KeyEvent keyEvent) {
+                if (keyEvent.getAction() != KeyEvent.ACTION_DOWN) {
+                    return false;
+                }
+                if (keyCode == KeyEvent.KEYCODE_ENTER){
+                    Editable editable = ((EditText) view).getText();
+                    if (editable != null) {
+                        fetchArtists(editable.toString());
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        // Get a reference to the ListView
+        ListView listviewArtist = (ListView) rootView.findViewById(R.id.listview_artist);
+        // Attach the adapter to the ListView
+        listviewArtist.setAdapter(artistAdapter);
+
+        // Restore any saved state
+        if (savedInstanceState != null) {
+            restoreState(savedInstanceState);
+        }
+
+        return rootView;
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        if (editArtistName != null && editArtistName.getText() != null) {
+            outState.putString(KEY_SEARCH_STRING, editArtistName.getText().toString());
+        } else {
+            outState.putString(KEY_SEARCH_STRING, "");
+        }
+        outState.putParcelableArrayList(KEY_ARTIST_LIST, appArtistList);
+
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+        if (savedInstanceState != null) {
+            restoreState(savedInstanceState);
+        }
+    }
+
+    /**
+     * Restore the state of the fragment from a Bundle.
+     * @param savedInstanceState the Bundle containing the saved state
+     */
+    private void restoreState(final Bundle savedInstanceState) {
+        if (savedInstanceState != null) {
+            // restore the search string
+            String searchString = savedInstanceState.getString(KEY_SEARCH_STRING);
+            editArtistName.setText(searchString);
+            // restore the artist list
+            List<AppArtist> updatedAppArtistList = savedInstanceState.getParcelableArrayList(KEY_ARTIST_LIST);
+            appArtistList.clear();
+            for (AppArtist appArtist : updatedAppArtistList) {
+                appArtistList.add(appArtist);
+            }
+            artistAdapter.notifyDataSetChanged();
+        }
     }
 
     @Override
@@ -74,68 +158,24 @@ public class ArtistListFragment extends Fragment {
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    public final View onCreateView(final LayoutInflater inflater, final ViewGroup container,
-                                    final Bundle savedInstanceState) {
-
-        // Initialise the artist list and adapter
-        artistList = new ArrayList<>();
-        artistAdapter = new ArtistAdapter(getActivity(), artistList);
-
-        // Inflate the fragment
-        View rootView = inflater.inflate(R.layout.artist_list, container, false);
-
-        // Get a reference to the artist name edit text box
-        editArtistName = (EditText) rootView.findViewById(R.id.editArtistName);
-
-        editArtistName.setOnKeyListener(new View.OnKeyListener() {
-            @Override
-            public boolean onKey(View view, int keyCode, KeyEvent keyEvent) {
-                if (keyEvent.getAction() != KeyEvent.ACTION_DOWN) {
-                    return false;
-                }
-                if(keyCode == KeyEvent.KEYCODE_ENTER){
-                    Editable editable = ((EditText) view).getText();
-                    if (editable != null) {
-                        fetchArtists(editable.toString());
-                    }
-                    return true;
-                }
-                return false;
-            }
-        });
-
-        // Get a reference to the ListView
-        ListView listviewArtist = (ListView) rootView.findViewById(R.id.listview_artist);
-        // Attach the adapter to the ListView
-        listviewArtist.setAdapter(artistAdapter);
-
-        return rootView;
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (editArtistName != null && editArtistName.getText() != null) {
-            String artistName = editArtistName.getText().toString();
-            fetchArtists(artistName);
-        }
-    }
-
     /**
-     * Perform an async task to refresh the list of artists.
+     * Invoke an async task to refresh the list of artists.
      * @param artistName the string against which to match artist names.
      */
     private void fetchArtists(String artistName) {
         if (artistName != null && !artistName.isEmpty()) {
-            new FetchArtistsTask().execute(artistName);
+            if (NetUtil.isConnected(getActivity())) {
+                new FetchArtistsTask().execute(artistName);
+            } else {
+                UiUtil.displayMessage(getActivity(), getString(R.string.error_not_connected));
+            }
         }
     }
 
     /**
      * Background task for getting the list of matching artists from Spotify.
      */
-    public class FetchArtistsTask extends AsyncTask<String, Void, List<Artist>> {
+    public class FetchArtistsTask extends AsyncTask<String, Void, List<AppArtist>> {
         private String searchString = null;
 
         /**
@@ -144,14 +184,37 @@ public class ArtistListFragment extends Fragment {
          * @return the list of artists as supplied by Spotify
          */
         @Override
-        protected List<Artist> doInBackground(String[] params) {
+        protected List<AppArtist> doInBackground(String[] params) {
             if (params == null || params.length != 1) {
                 throw new InvalidParameterException("FetchArtistsTask requires a single parameter, the artist name");
             }
             searchString = params[0];
 
-            // Fetch the list of artists from Spotify and return it
-            return getSpotifyArtists(searchString);
+            if (NetUtil.isConnected(getActivity())) {
+                // Fetch the list of artists and return it
+                return getAppArtists(searchString);
+            }
+            // Return an empty list if there is no internet connection
+            return new ArrayList<>();
+        }
+
+        /**
+         * Returns a list of the artists whose names match a supplied string.
+         * @param strSearch the string to match against
+         * @return a list of the artists whose names match the search string
+         */
+        private List<AppArtist> getAppArtists(String strSearch) {
+            List<AppArtist> appArtistList = new ArrayList<>();
+
+            List<Artist> artistList = getSpotifyArtists(strSearch);
+            if (artistList != null) {
+                for (Artist artist : artistList) {
+                    AppArtist appArtist = new AppArtist(artist.id, artist.name,
+                            SpotifyUtil.getImageUrlSmall(artist.images));
+                    appArtistList.add(appArtist);
+                }
+            }
+            return appArtistList;
         }
 
         /**
@@ -175,24 +238,23 @@ public class ArtistListFragment extends Fragment {
         }
 
         /**
+         * Load the artist list created in the background into the adapter.
          * Runs on the UI thread after {@link #doInBackground}.
          * This method won't be invoked if the task was cancelled.
          * @param updatedArtistList the artist list, as returned by {@link #doInBackground}.
          */
         @Override
-        protected void onPostExecute(List<Artist> updatedArtistList) {
+        protected void onPostExecute(List<AppArtist> updatedArtistList) {
             if (updatedArtistList == null || updatedArtistList.size() == 0) {
                 String message = String.format(getString(R.string.no_matching_artists), searchString);
-                Toast toast = Toast.makeText(getActivity(), message, Toast.LENGTH_LONG);
-                toast.setGravity(Gravity.CENTER, 0, 0);
-                toast.show();
+                UiUtil.displayMessage(getActivity(), message);
                 return;
             }
 
             // update the adapter's data object
-            artistList.clear();
-            for (Artist artist : updatedArtistList) {
-                artistList.add(artist);
+            appArtistList.clear();
+            for (AppArtist appArtist : updatedArtistList) {
+                appArtistList.add(appArtist);
             }
             // notify the adapter that its data object has changed
             artistAdapter.notifyDataSetChanged();

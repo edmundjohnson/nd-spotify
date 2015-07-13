@@ -3,6 +3,9 @@
     <string name="action_settings">Settings</string>
     <string name="action_refresh">Refresh</string>
 
+    <!-- Error messages -->
+    <string name="error_not_connected">Your device is not connected to the internet</string>
+
     <!-- Artist list -->
     <string name="hint_artist_name">Artist Name</string>
     <string name="artist_image_description">Picture of the artist</string>

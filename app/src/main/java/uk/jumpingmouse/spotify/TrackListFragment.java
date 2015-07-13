@@ -5,9 +5,9 @@ import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -16,7 +16,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
@@ -40,16 +39,17 @@ public class TrackListFragment extends Fragment {
 
     private static final String QUERY_COUNTRY_KEY = "country";
 
-    /** The id of the artist whose top tracks are to be listed. */
-    private String artistId;
-    /** The name of the artist whose top tracks are to be listed. */
-    private String artistName;
+    private static final String KEY_ARTIST = "ARTIST_NAME";
+    private static final String KEY_TRACK_LIST = "TRACK_LIST";
+
+    /** The artist whose top tracks are to be listed. */
+    private AppArtist appArtist;
 
     /** The list of top tracks for the artist. */
-    private List<Track> trackList;
+    private ArrayList<AppTrack> appTrackList;
 
     /** The adapter for the track list. */
-    private ArrayAdapter<Track> trackAdapter;
+    private ArrayAdapter<AppTrack> trackAdapter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -57,8 +57,69 @@ public class TrackListFragment extends Fragment {
         // Indicate that the fragment can handle menu events
         this.setHasOptionsMenu(true);
 
-        artistId = getActivity().getIntent().getExtras().getString("ARTIST_ID");
-        artistName = getActivity().getIntent().getExtras().getString("ARTIST_NAME");
+        appArtist = (AppArtist) getActivity().getIntent().getExtras().get("ARTIST");
+    }
+
+    @Override
+    public final View onCreateView(final LayoutInflater inflater, final ViewGroup container,
+                                    final Bundle savedInstanceState) {
+
+        // Initialise the track list and adapter
+        appTrackList = new ArrayList<>();
+        trackAdapter = new TrackAdapter(getActivity(), appTrackList);
+
+        // Inflate the fragment
+        View rootView = inflater.inflate(R.layout.track_list, container, false);
+
+        // Get a reference to the ListView
+        ListView listviewTrack = (ListView) rootView.findViewById(R.id.listview_track);
+        // Attach the adapter to the ListView
+        listviewTrack.setAdapter(trackAdapter);
+
+        // Restore any saved state
+        if (savedInstanceState != null) {
+            restoreState(savedInstanceState);
+        } else {
+            // Fetch the top tracks for the artist in another thread
+            fetchTracks(appArtist.getId());
+        }
+
+        return rootView;
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putParcelable(KEY_ARTIST, appArtist);
+        outState.putParcelableArrayList(KEY_TRACK_LIST, appTrackList);
+
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+        if (savedInstanceState != null) {
+            restoreState(savedInstanceState);
+        }
+    }
+
+    /**
+     * Restore the state of the fragment from a Bundle.
+     * @param savedInstanceState the Bundle containing the saved state
+     */
+    private void restoreState(final Bundle savedInstanceState) {
+        if (savedInstanceState != null) {
+            // restore the artist
+            appArtist = savedInstanceState.getParcelable(KEY_ARTIST);
+            //set action bar subtitle ?
+            // restore the track list
+            List<AppTrack> updatedAppTrackList = savedInstanceState.getParcelableArrayList(KEY_TRACK_LIST);
+            appTrackList.clear();
+            for (AppTrack appTrack : updatedAppTrackList) {
+                appTrackList.add(appTrack);
+            }
+            trackAdapter.notifyDataSetChanged();
+        }
     }
 
     @Override
@@ -77,32 +138,10 @@ public class TrackListFragment extends Fragment {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_refresh) {
-            fetchTracks(artistId);
+            fetchTracks(appArtist.getId());
             return true;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public final View onCreateView(final LayoutInflater inflater, final ViewGroup container,
-                                    final Bundle savedInstanceState) {
-
-        // Initialise the track list and adapter
-        trackList = new ArrayList<>();
-        trackAdapter = new TrackAdapter(getActivity(), trackList);
-
-        // Inflate the fragment
-        View rootView = inflater.inflate(R.layout.track_list, container, false);
-
-        // Get a reference to the ListView
-        ListView listviewTrack = (ListView) rootView.findViewById(R.id.listview_track);
-        // Attach the adapter to the ListView
-        listviewTrack.setAdapter(trackAdapter);
-
-        // Fetch the top tracks for the artist in another thread
-        fetchTracks(artistId);
-
-        return rootView;
     }
 
     /**
@@ -111,14 +150,18 @@ public class TrackListFragment extends Fragment {
      */
     private void fetchTracks(String artistId) {
         if (artistId != null && !artistId.isEmpty()) {
-            new FetchTracksTask().execute(artistId);
+            if (NetUtil.isConnected(getActivity())) {
+                new FetchTracksTask().execute(artistId);
+            } else {
+                UiUtil.displayMessage(getActivity(), getString(R.string.error_not_connected));
+            }
         }
     }
 
     /**
      * Background task for getting the list of top tracks for an artist from Spotify.
      */
-    public class FetchTracksTask extends AsyncTask<String, Void, List<Track>> {
+    public class FetchTracksTask extends AsyncTask<String, Void, List<AppTrack>> {
 
         /**
          * Background task to fetch a list of the top tracks for an artist from Spotify
@@ -127,17 +170,20 @@ public class TrackListFragment extends Fragment {
          * @return the list of tracks as supplied by Spotify
          */
         @Override
-        protected List<Track> doInBackground(String[] params) {
+        protected List<AppTrack> doInBackground(String[] params) {
             // Check we have the artist id as a parameter
             if (params == null || params.length != 1) {
                 throw new InvalidParameterException("FetchTracksTask requires a single parameter, the artist id");
             }
-            artistId = params[0];
-            String countryCode = getPreference(getActivity(),
-                    R.string.pref_country_code_key, R.string.pref_country_code_default);
+            String artistId = params[0];
+            String countryCode = getPreference(getActivity(), R.string.pref_country_code_key, R.string.pref_country_code_default);
 
-            // Get the Spotify top tracks for the artist and return them
-            return getSpotifyArtistTopTracks(artistId, countryCode);
+            if (NetUtil.isConnected(getActivity())) {
+                // Get the Spotify top tracks for the artist and return them
+                return getArtistTopAppTracks(artistId, countryCode);
+            } else {
+                return new ArrayList<>();
+            }
         }
 
         /**
@@ -153,36 +199,61 @@ public class TrackListFragment extends Fragment {
         }
 
         /**
+         * Load the track list created in the background into the adapter.
          * Runs on the UI thread after {@link #doInBackground}.
          * This method won't be invoked if the task was cancelled.
          * @param updatedTrackList the track list, as returned by {@link #doInBackground}.
          */
         @Override
-        protected void onPostExecute(List<Track> updatedTrackList) {
+        protected void onPostExecute(List<AppTrack> updatedTrackList) {
             if (updatedTrackList == null || updatedTrackList.size() == 0) {
-                String message = String.format(getString(R.string.no_matching_tracks_for_artist), artistName);
-                Toast toast = Toast.makeText(getActivity(), message, Toast.LENGTH_LONG);
-                toast.setGravity(Gravity.CENTER, 0, 0);
-                toast.show();
+                String message = String.format(
+                        getString(R.string.no_matching_tracks_for_artist), appArtist.getName());
+                UiUtil.displayMessage(getActivity(), message);
                 return;
             }
 
             // update the adapter's data object
-            trackList.clear();
-            for (Track track : updatedTrackList) {
-                trackList.add(track);
+            appTrackList.clear();
+            for (AppTrack track : updatedTrackList) {
+                appTrackList.add(track);
             }
             // notify the adapter that its data object has changed
             trackAdapter.notifyDataSetChanged();
         }
 
         /**
-         * Returns a list of the Spotify top tracks for an artist in a country.
+         * Returns a list of the top tracks for an artist in a country.
          * @param artistId the artist id
          * @param countryCode the country code
-         * @return a list of the Spotify top tracks for the artist in the country
+         * @return a list of the top tracks for the artist in the country
          */
-        private List<Track> getSpotifyArtistTopTracks(String artistId, String countryCode) {
+        private List<AppTrack> getArtistTopAppTracks(String artistId, String countryCode) {
+            List<AppTrack> appTrackList = new ArrayList<>();
+            List<Track> trackList = getArtistTopSpotifyTracks(artistId, countryCode);
+            if (trackList != null) {
+                for (Track track : trackList) {
+                    AppTrack appTrack = new AppTrack(
+                            track.id,
+                            track.name,
+                            SpotifyUtil.getAlbumName(track, getActivity().getString(R.string.unknown_album_name)),
+                            SpotifyUtil.getImageUrlSmallForAlbum(track.album),
+                            SpotifyUtil.getImageUrlLargeForAlbum(track.album),
+                            track.preview_url);
+                    appTrackList.add(appTrack);
+                }
+            }
+            return appTrackList;
+        }
+
+        /**
+         * Returns a list of the top Spotify tracks for an artist in a country.
+         * This method must be run in a background thread.
+         * @param artistId the artist id
+         * @param countryCode the country code
+         * @return a list of the top Spotify tracks for the artist in the country
+         */
+        private List<Track> getArtistTopSpotifyTracks(String artistId, String countryCode) {
             try {
                 Map<String, Object> options = new HashMap<>();
                 options.put(QUERY_COUNTRY_KEY, countryCode);

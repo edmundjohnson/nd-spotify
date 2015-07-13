@@ -12,15 +12,12 @@ import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
-import kaaes.spotify.webapi.android.models.AlbumSimple;
-import kaaes.spotify.webapi.android.models.Track;
-
 
 /**
  * An adapter for the list items in a track list.
  * @author Edmund Johnson
  */
-public class TrackAdapter extends ArrayAdapter<Track> {
+public class TrackAdapter extends ArrayAdapter<AppTrack> {
 
     private final Activity context;
 
@@ -29,7 +26,7 @@ public class TrackAdapter extends ArrayAdapter<Track> {
      * @param context the current context, used to inflate the layout file
      * @param tracks the list of track objects to be displayed
      */
-    public TrackAdapter(Activity context, List<Track> tracks) {
+    public TrackAdapter(Activity context, List<AppTrack> tracks) {
         // The second argument is used when the ArrayAdapter is populating a single TextView.
         // This adapter does not use the second argument, so it is set to 0.
         super(context, 0, tracks);
@@ -46,7 +43,7 @@ public class TrackAdapter extends ArrayAdapter<Track> {
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {
         // Get the track object from the list of tracks
-        Track track = getItem(position);
+        AppTrack track = getItem(position);
 
         // If the recycled view is null, inflate the list item layout and assign it
         if (convertView == null) {
@@ -55,45 +52,15 @@ public class TrackAdapter extends ArrayAdapter<Track> {
 
         // Populate the image view element with the track image
         ImageView imgAlbum = (ImageView) convertView.findViewById(R.id.imgAlbum);
-        String imageUrl = getSmallImageUrlForAlbum(track.album);
-        Picasso.with(context).load(imageUrl).into(imgAlbum);
+        Picasso.with(context).load(track.getImageUrlSmall()).into(imgAlbum);
 
         // Populate the text view elements with the track name and album name
         TextView txtTrack = (TextView) convertView.findViewById(R.id.txtTrack);
-        txtTrack.setText(track.name);
+        txtTrack.setText(track.getTrackName());
         TextView txtAlbum = (TextView) convertView.findViewById(R.id.txtAlbum);
-        txtAlbum.setText(getAlbumName(track));
+        txtAlbum.setText(track.getAlbumName());
 
         return convertView;
-    }
-
-    /**
-     * Returns a URL for a small image for a Spotify album.
-     * @param album the Spotify album
-     * @return a URL for a small image for the Spotify album.
-     */
-    private String getSmallImageUrlForAlbum(AlbumSimple album) {
-        if (album == null) {
-            return null;
-        }
-        return SpotifyUtil.getSmallImageUrl(album.images);
-    }
-
-    /**
-     * Returns the album name for a spotify track.
-     * @param track the spotify track
-     * @return the album name for the spotify track, or "Unknown" if this could not
-     *         be determined
-     */
-    private String getAlbumName(Track track) {
-        if (track != null
-                && track.album != null
-                && track.album.name != null
-                && !track.album.name.trim().isEmpty()) {
-            return track.album.name;
-        } else {
-            return context.getString(R.string.unknown_album_name);
-        }
     }
 
 }

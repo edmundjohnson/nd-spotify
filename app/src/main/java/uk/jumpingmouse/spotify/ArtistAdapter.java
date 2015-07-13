@@ -13,24 +13,22 @@ import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
-import kaaes.spotify.webapi.android.models.Artist;
-
 
 /**
  * An adapter for the list items in the artist list.
  * @author Edmund Johnson
  */
-public class ArtistAdapter extends ArrayAdapter<Artist> {
+public class ArtistAdapter extends ArrayAdapter<AppArtist> {
 
     private final Activity context;
-    private final List<Artist> artistList;
+    private final List<AppArtist> artistList;
 
     /**
      * Constructor which does not require a resource.
      * @param context the current context, used to inflate the layout file
      * @param artistList the list of artists to be displayed
      */
-    public ArtistAdapter(Activity context, List<Artist> artistList) {
+    public ArtistAdapter(Activity context, List<AppArtist> artistList) {
         // The second argument is used when the ArrayAdapter is populating a single TextView.
         // This adapter does not use the second argument, so it is set to 0.
         super(context, 0, artistList);
@@ -48,7 +46,7 @@ public class ArtistAdapter extends ArrayAdapter<Artist> {
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {
         // Get the artist object from the list of artists
-        Artist artist = getItem(position);
+        AppArtist artist = getItem(position);
 
         // If the recycled view is null, inflate the list item layout and assign it
         if (convertView == null) {
@@ -57,11 +55,10 @@ public class ArtistAdapter extends ArrayAdapter<Artist> {
 
         // Populate the image view with the artist image
         ImageView imgArtist = (ImageView) convertView.findViewById(R.id.imgArtist);
-        String imageUrl = getSmallImageUrlForArtist(artist);
-        Picasso.with(context).load(imageUrl).into(imgArtist);
+        Picasso.with(context).load(artist.getImageUrlSmall()).into(imgArtist);
         // Populate the text view with the artist name
         TextView txtArtist = (TextView) convertView.findViewById(R.id.txtArtist);
-        txtArtist.setText(artist.name);
+        txtArtist.setText(artist.getName());
 
         // Set the click handler for the item
         convertView.setOnClickListener(new View.OnClickListener() {
@@ -75,18 +72,6 @@ public class ArtistAdapter extends ArrayAdapter<Artist> {
     }
 
     /**
-     * Returns a URL for a small image for a Spotify artist
-     * @param artist the Spotify artist
-     * @return a URL for a small image for the Spotify artist.
-     */
-    private String getSmallImageUrlForArtist(Artist artist) {
-        if (artist == null) {
-            return null;
-        }
-        return SpotifyUtil.getSmallImageUrl(artist.images);
-    }
-
-    /**
      * Handler method invoked when an item is clicked.
      * @param position the item's position in the list
      */
@@ -94,8 +79,7 @@ public class ArtistAdapter extends ArrayAdapter<Artist> {
         // Display the top tracks for the selected artist in the track list activity,
         // passing in the artist info
         Intent intent = new Intent(context, TrackListActivity.class);
-        intent.putExtra("ARTIST_ID", artistList.get(position).id);
-        intent.putExtra("ARTIST_NAME", artistList.get(position).name);
+        intent.putExtra("ARTIST", artistList.get(position));
         context.startActivity(intent);
     }
 
