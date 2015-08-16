@@ -1,0 +1,85 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    tools:context=".MainActivityFragment">
+
+    <TextView
+        android:id="@+id/txtArtist"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="16sp"
+        android:gravity="center_horizontal"
+        android:fontFamily="sans-serif-light"
+        android:textAppearance="?android:textAppearanceLarge"
+        tools:text="Pink Floyd" />
+
+    <TextView
+        android:id="@+id/txtAlbum"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="8sp"
+        android:gravity="center_horizontal"
+        android:fontFamily="sans-serif-light"
+        android:textAppearance="?android:textAppearanceMedium"
+        tools:text="Dark Side of the Moon" />
+
+    <ImageView
+        android:id="@+id/imgAlbum"
+        android:layout_width="@android:dimen/thumbnail_width"
+        android:layout_height="@android:dimen/thumbnail_height"
+        android:layout_gravity="center"
+        android:contentDescription="@string/album_image_description"
+        android:layout_margin="16sp"
+        tools:src="@mipmap/ic_launcher" />
+
+    <TextView
+        android:id="@+id/txtTrack"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:fontFamily="sans-serif-light"
+        android:textAppearance="?android:textAppearanceLarge"
+        tools:text="Breathe" />
+
+    <SeekBar
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24sp"
+        android:layout_marginRight="16sp"
+        android:layout_marginLeft="16sp">
+
+    </SeekBar>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btnPrev"
+            android:layout_width="@dimen/abc_action_button_min_width_material"
+            android:layout_height="@dimen/abc_action_button_min_height_material"
+            android:background="@android:drawable/ic_media_previous" />
+        <Button
+            android:id="@+id/btnPlayPause"
+            android:layout_width="@dimen/abc_action_button_min_width_material"
+            android:layout_height="@dimen/abc_action_button_min_height_material"
+            android:layout_marginRight="32dp"
+            android:layout_marginLeft="32dp"
+            android:background="@android:drawable/ic_media_play" />
+        <Button
+            android:id="@+id/btnNext"
+            android:layout_width="@dimen/abc_action_button_min_width_material"
+            android:layout_height="@dimen/abc_action_button_min_height_material"
+            android:background="@android:drawable/ic_media_next" />
+    </LinearLayout>
+
+</LinearLayout>

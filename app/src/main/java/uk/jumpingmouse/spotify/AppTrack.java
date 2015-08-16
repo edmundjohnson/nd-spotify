@@ -15,6 +15,7 @@ public class AppTrack implements Parcelable {
     private final String imageUrlSmall;
     private final String imageUrlLarge;
     private final String previewUrl;
+    private final String artistName;
 
     /**
      * Public constructor which initialises the artist.
@@ -24,15 +25,18 @@ public class AppTrack implements Parcelable {
      * @param imageUrlSmall the URL of a small image for the track
      * @param imageUrlLarge the URL of a large image for the track
      * @param previewUrl the preview URL for streaming the track
+     * @param artistName the name of the artist
      */
     public AppTrack(String id, String trackName, String albumName,
-                    String imageUrlSmall, String imageUrlLarge, String previewUrl) {
+                    String imageUrlSmall, String imageUrlLarge, String previewUrl,
+                    String artistName) {
         this.id = id;
         this.trackName = trackName;
         this.albumName = albumName;
         this.imageUrlSmall = imageUrlSmall;
         this.imageUrlLarge = imageUrlLarge;
         this.previewUrl = previewUrl;
+        this.artistName = artistName;
     }
 
     /**
@@ -46,6 +50,7 @@ public class AppTrack implements Parcelable {
         this.imageUrlSmall = parcel.readString();
         this.imageUrlLarge = parcel.readString();
         this.previewUrl = parcel.readString();
+        this.artistName = parcel.readString();
     }
 
     @Override
@@ -61,6 +66,7 @@ public class AppTrack implements Parcelable {
         parcel.writeString(getImageUrlSmall());
         parcel.writeString(getImageUrlLarge());
         parcel.writeString(getPreviewUrl());
+        parcel.writeString(getArtistName());
     }
 
     public static final Creator<AppTrack> CREATOR
@@ -98,5 +104,9 @@ public class AppTrack implements Parcelable {
 
     public String getPreviewUrl() {
         return previewUrl;
+    }
+
+    public String getArtistName() {
+        return artistName;
     }
 }

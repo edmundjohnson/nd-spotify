@@ -25,7 +25,8 @@ public class SpotifyUtil {
     /**
      * Returns the album name for a spotify track.
      * @param track the spotify track
-     * @return the album name for the spotify track, or "Unknown" if this could not
+     * @param defaultName the name to return if the album name could not be determined
+     * @return the album name for the spotify track, or the default name if this could not
      *         be determined
      */
     public static String getAlbumName(Track track, String defaultName) {
@@ -34,6 +35,24 @@ public class SpotifyUtil {
                 && track.album.name != null
                 && !track.album.name.trim().isEmpty()) {
             return track.album.name;
+        } else {
+            return defaultName;
+        }
+    }
+
+    /**
+     * Returns the artist name for a spotify track.
+     * @param track the spotify track
+     * @param defaultName the name to return if the artist name could not be determined
+     * @return the artist name for the spotify track, or the default name if this could not
+     *         be determined
+     */
+    public static String getArtistName(Track track, String defaultName) {
+        if (track != null
+                && track.artists != null
+                && !track.artists.isEmpty()
+                && track.artists.get(0) != null) {
+            return track.artists.get(0).name;
         } else {
             return defaultName;
         }

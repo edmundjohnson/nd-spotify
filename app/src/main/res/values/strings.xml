@@ -16,5 +16,9 @@
     <string name="album_image_description">Picture of the track\'s album</string>
     <string name="no_matching_tracks_for_artist">No tracks found for %s. Try selecting a different artist.</string>
     <string name="unknown_album_name">Unknown</string>
+    <string name="unknown_artist_name">Unknown</string>
+
+    <!-- Player -->
+    <string name="player_activity_name">Spotify Player</string>
 
 </resources>

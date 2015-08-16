@@ -39,36 +39,36 @@ public class ArtistAdapter extends ArrayAdapter<AppArtist> {
     /**
      * Get the view for a list item at a specified position.
      * @param position the position in the list
-     * @param convertView the recycled view
+     * @param itemView the recycled view
      * @param parent the parent ViewGroup that is used for inflation
      * @return the View for the list item at the specified position
      */
     @Override
-    public View getView(final int position, View convertView, ViewGroup parent) {
+    public View getView(final int position, View itemView, ViewGroup parent) {
         // Get the artist object from the list of artists
         AppArtist artist = getItem(position);
 
         // If the recycled view is null, inflate the list item layout and assign it
-        if (convertView == null) {
-            convertView = LayoutInflater.from(getContext()).inflate(R.layout.artist_list_item, parent, false);
+        if (itemView == null) {
+            itemView = LayoutInflater.from(getContext()).inflate(R.layout.artist_list_item, parent, false);
         }
 
         // Populate the image view with the artist image
-        ImageView imgArtist = (ImageView) convertView.findViewById(R.id.imgArtist);
+        ImageView imgArtist = (ImageView) itemView.findViewById(R.id.imgArtist);
         Picasso.with(context).load(artist.getImageUrlSmall()).into(imgArtist);
         // Populate the text view with the artist name
-        TextView txtArtist = (TextView) convertView.findViewById(R.id.txtArtist);
+        TextView txtArtist = (TextView) itemView.findViewById(R.id.txtArtist);
         txtArtist.setText(artist.getName());
 
         // Set the click handler for the item
-        convertView.setOnClickListener(new View.OnClickListener() {
+        itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(final View view) {
                 handleItemClick(position);
             }
         });
 
-        return convertView;
+        return itemView;
     }
 
     /**

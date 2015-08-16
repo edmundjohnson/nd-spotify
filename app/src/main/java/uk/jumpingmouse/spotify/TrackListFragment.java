@@ -239,7 +239,9 @@ public class TrackListFragment extends Fragment {
                             SpotifyUtil.getAlbumName(track, getActivity().getString(R.string.unknown_album_name)),
                             SpotifyUtil.getImageUrlSmallForAlbum(track.album),
                             SpotifyUtil.getImageUrlLargeForAlbum(track.album),
-                            track.preview_url);
+                            track.preview_url,
+                            SpotifyUtil.getArtistName(track, getActivity().getString(R.string.unknown_artist_name))
+                            );
                     appTrackList.add(appTrack);
                 }
             }
