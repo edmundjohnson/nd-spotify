@@ -42,6 +42,8 @@ public class TrackListFragment extends Fragment {
     private static final String KEY_ARTIST = "ARTIST_NAME";
     private static final String KEY_TRACK_LIST = "TRACK_LIST";
 
+    private static final long PREVIEW_DURATION_MS = 30000;
+
     /** The artist whose top tracks are to be listed. */
     private AppArtist appArtist;
 
@@ -240,6 +242,8 @@ public class TrackListFragment extends Fragment {
                             SpotifyUtil.getImageUrlSmallForAlbum(track.album),
                             SpotifyUtil.getImageUrlLargeForAlbum(track.album),
                             track.preview_url,
+                            track.duration_ms,
+                            PREVIEW_DURATION_MS,
                             SpotifyUtil.getArtistName(track, getActivity().getString(R.string.unknown_artist_name))
                             );
                     appTrackList.add(appTrack);

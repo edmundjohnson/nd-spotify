@@ -1,0 +1,12 @@
+<resources>
+
+    <style name="listTextLarge">
+        <item name="android:textAppearance">?android:textAppearanceListItem</item>
+        <item name="android:fontFamily">sans-serif-light</item>
+    </style>
+    <style name="listTextSmall">
+        <item name="android:textAppearance">?android:textAppearanceListItemSmall</item>
+        <item name="android:fontFamily">sans-serif-light</item>
+    </style>
+
+</resources>

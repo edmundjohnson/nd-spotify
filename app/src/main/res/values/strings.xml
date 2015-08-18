@@ -20,5 +20,6 @@
 
     <!-- Player -->
     <string name="player_activity_name">Spotify Player</string>
+    <string name="start_time">0:00</string>
 
 </resources>

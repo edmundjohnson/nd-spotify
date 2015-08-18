@@ -21,11 +21,10 @@
         android:id="@+id/txtArtist"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:fontFamily="sans-serif-light"
-        android:textAppearance="?android:textAppearanceListItem"
         android:layout_gravity="center_vertical"
         android:layout_marginStart="@dimen/abc_list_item_padding_horizontal_material"
         android:layout_marginLeft="@dimen/abc_list_item_padding_horizontal_material"
+        style="@style/listTextLarge"
         tools:text="Text for preview only" />
 
 </LinearLayout>

@@ -30,7 +30,10 @@
         <activity
             android:name=".PlayerActivity"
             android:label="@string/player_activity_name"
-            android:parentActivityName=".TrackListActivity" >
+            android:parentActivityName=".TrackListActivity">
+            <!-- The next line results in a crash on small devices,
+                 possibly because we're using a DialogFragment -->
+            <!-- android:theme="@style/AppDialogWhenLarge" -->
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="uk.jumpingmouse.spotify.TrackListActivity" />

@@ -1,42 +1,43 @@
 package uk.jumpingmouse.spotify;
 
+import android.app.Dialog;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
+import android.support.v4.app.DialogFragment;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
 
+import java.util.concurrent.TimeUnit;
+
 
 /**
  * The fragment containing the track list.
  */
-public class PlayerFragment extends Fragment {
+public class PlayerFragment extends DialogFragment {
     /** The log tag for this class. */
     private static final String LOG_TAG = PlayerFragment.class.getSimpleName();
 
     private static final String KEY_TRACK = "TRACK_ID";
 
+    private static final String MINUTES_SECONDS_FORMAT = "%d:%d";
+
     /** The track which is to be played. */
     private AppTrack appTrack;
-
-    private TextView txtTrack;
-    private TextView txtArtist;
-    private TextView txtAlbum;
-    private ImageView imgAlbum;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // Indicate that the fragment can handle menu events
-        this.setHasOptionsMenu(true);
+        //this.setHasOptionsMenu(true);
 
         appTrack = (AppTrack) getActivity().getIntent().getExtras().get("TRACK");
     }
@@ -48,26 +49,47 @@ public class PlayerFragment extends Fragment {
         // Inflate the fragment
         View rootView = inflater.inflate(R.layout.player, container, false);
 
-        // Get a reference to the ListView
-        //ListView listviewTrack = (ListView) rootView.findViewById(R.id.listview_track);
-
         // Restore any saved state
         if (savedInstanceState != null) {
             restoreState(savedInstanceState);
         }
 
-        txtTrack = (TextView) rootView.findViewById(R.id.txtTrack);
-        txtArtist = (TextView) rootView.findViewById(R.id.txtArtist);
-        txtAlbum = (TextView) rootView.findViewById(R.id.txtAlbum);
-        imgAlbum = (ImageView) rootView.findViewById(R.id.imgAlbum);
+        TextView txtTrack = (TextView) rootView.findViewById(R.id.txtTrack);
+        TextView txtArtist = (TextView) rootView.findViewById(R.id.txtArtist);
+        TextView txtAlbum = (TextView) rootView.findViewById(R.id.txtAlbum);
+        ImageView imgAlbum = (ImageView) rootView.findViewById(R.id.imgAlbum);
+        TextView txtTimeEnd = (TextView) rootView.findViewById(R.id.txtTimeEnd);
 
         txtTrack.setText(appTrack.getTrackName());
         txtArtist.setText(appTrack.getArtistName());
         txtAlbum.setText(appTrack.getAlbumName());
         Picasso.with(getActivity()).load(appTrack.getImageUrlLarge()).into(imgAlbum);
-
+        txtTimeEnd.setText(getHumanReadableMilliseconds(appTrack.getPreviewDuration()));
 
         return rootView;
+    }
+
+    private String getHumanReadableMilliseconds(long millis) {
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(millis) -
+                            TimeUnit.MINUTES.toSeconds(minutes);
+
+        return String.format(MINUTES_SECONDS_FORMAT, minutes, seconds);
+    }
+
+    /**
+     * The system calls this only when creating the layout in a dialog.
+     * It does not get called when using the DialogWhenLarge theme for the activity.
+     */
+    @Override
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
+        // The only reason you might override this method when using onCreateView() is
+        // to modify any dialog characteristics. For example, the dialog includes a
+        // title by default, but your custom layout might not need it. So here you can
+        // remove the dialog title, but you must call the superclass to get the Dialog.
+        Dialog dialog = super.onCreateDialog(savedInstanceState);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        return dialog;
     }
 
     @Override

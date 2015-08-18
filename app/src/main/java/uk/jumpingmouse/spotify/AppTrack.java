@@ -15,6 +15,8 @@ public class AppTrack implements Parcelable {
     private final String imageUrlSmall;
     private final String imageUrlLarge;
     private final String previewUrl;
+    private final long previewDuration;
+    private final long duration;
     private final String artistName;
 
     /**
@@ -25,17 +27,20 @@ public class AppTrack implements Parcelable {
      * @param imageUrlSmall the URL of a small image for the track
      * @param imageUrlLarge the URL of a large image for the track
      * @param previewUrl the preview URL for streaming the track
+     * @param duration the track duration in milliseconds
      * @param artistName the name of the artist
      */
     public AppTrack(String id, String trackName, String albumName,
                     String imageUrlSmall, String imageUrlLarge, String previewUrl,
-                    String artistName) {
+                    long duration, long previewDuration, String artistName) {
         this.id = id;
         this.trackName = trackName;
         this.albumName = albumName;
         this.imageUrlSmall = imageUrlSmall;
         this.imageUrlLarge = imageUrlLarge;
         this.previewUrl = previewUrl;
+        this.duration = duration;
+        this.previewDuration = previewDuration;
         this.artistName = artistName;
     }
 
@@ -50,6 +55,8 @@ public class AppTrack implements Parcelable {
         this.imageUrlSmall = parcel.readString();
         this.imageUrlLarge = parcel.readString();
         this.previewUrl = parcel.readString();
+        this.duration = parcel.readLong();
+        this.previewDuration = parcel.readLong();
         this.artistName = parcel.readString();
     }
 
@@ -66,6 +73,8 @@ public class AppTrack implements Parcelable {
         parcel.writeString(getImageUrlSmall());
         parcel.writeString(getImageUrlLarge());
         parcel.writeString(getPreviewUrl());
+        parcel.writeLong(getDuration());
+        parcel.writeLong(getPreviewDuration());
         parcel.writeString(getArtistName());
     }
 
@@ -104,6 +113,14 @@ public class AppTrack implements Parcelable {
 
     public String getPreviewUrl() {
         return previewUrl;
+    }
+
+    public long getDuration() {
+        return duration;
+    }
+
+    public long getPreviewDuration() {
+        return previewDuration;
     }
 
     public String getArtistName() {

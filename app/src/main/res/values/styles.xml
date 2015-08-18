@@ -7,4 +7,19 @@
         <item name="colorPrimaryDark">@color/dark_green</item>
     </style>
 
+    <!-- Theme for activity being a dialog (with no title) on large devices. -->
+    <style name="AppDialogWhenLarge" parent="Theme.AppCompat.Light.DialogWhenLarge">
+        <item name="windowNoTitle">true</item>
+    </style>
+
+
+    <style name="listTextLarge">
+        <item name="android:textAppearance">?android:textAppearanceMedium</item>
+        <item name="android:fontFamily">sans-serif-light</item>
+    </style>
+    <style name="listTextSmall">
+        <item name="android:textAppearance">?android:textAppearanceSmall</item>
+        <item name="android:fontFamily">sans-serif-light</item>
+    </style>
+
 </resources>
