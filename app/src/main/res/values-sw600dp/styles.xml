@@ -9,4 +9,8 @@
         <item name="android:fontFamily">sans-serif-light</item>
     </style>
 
+    <style name="AppListStyle">
+        <item name="android:choiceMode">singleChoice</item>
+    </style>
+
 </resources>

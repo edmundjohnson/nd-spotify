@@ -15,13 +15,14 @@
         android:hint="@string/hint_artist_name" />
 
     <FrameLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
         <ListView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:id="@+id/listview_artist" />
+            android:id="@+id/listview_artist"
+            style="@style/AppListStyle" />
 
     </FrameLayout>
 
