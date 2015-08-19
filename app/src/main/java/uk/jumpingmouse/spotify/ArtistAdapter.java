@@ -13,6 +13,8 @@ import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
+import uk.jumpingmouse.spotify.data.AppArtist;
+
 
 /**
  * An adapter for the list items in the artist list.
@@ -76,11 +78,33 @@ public class ArtistAdapter extends ArrayAdapter<AppArtist> {
      * @param position the item's position in the list
      */
     private void handleItemClick(final int position) {
-        // Display the top tracks for the selected artist in the track list activity,
-        // passing in the artist info
-        Intent intent = new Intent(context, TrackListActivity.class);
-        intent.putExtra("ARTIST", artistList.get(position));
-        context.startActivity(intent);
+        // Display the top tracks for the selected artist in the track list activity
+        // or fragment, passing in the artist info
+        AppArtist artist = artistList.get(position);
+        ArtistListFragment.Callback callbackActivity = (ArtistListFragment.Callback) context;
+
+        if (callbackActivity.getTwoPane()) {
+            callbackActivity.onItemSelected(artist);
+        } else {
+            Intent intent = new Intent(context, TrackListActivity.class);
+            intent.putExtra("ARTIST", artist);
+            context.startActivity(intent);
+        }
     }
 
+    /**
+     * Cache of the child item views.
+     * Useful for newView/bindView approach, but not for getView approach.
+     */
+    /*
+    public static class ViewHolder {
+        public final ImageView imgArtist;
+        public final TextView txtArtist;
+
+        public ViewHolder(View view) {
+            imgArtist = (ImageView) view.findViewById(R.id.imgArtist);
+            txtArtist = (TextView) view.findViewById(R.id.txtArtist);
+        }
+    }
+    */
 }

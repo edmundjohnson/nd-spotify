@@ -1,4 +1,4 @@
-package uk.jumpingmouse.spotify;
+package uk.jumpingmouse.spotify.data;
 
 import android.os.Parcel;
 import android.os.Parcelable;

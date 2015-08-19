@@ -6,6 +6,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import uk.jumpingmouse.spotify.data.AppArtist;
+
 
 /**
  * Activity for displaying the list of top tracks for an artist.
@@ -20,6 +22,22 @@ public class TrackListActivity extends AppCompatActivity {
         AppArtist artist = (AppArtist) getIntent().getExtras().get("ARTIST");
         if (getSupportActionBar() != null) {
             getSupportActionBar().setSubtitle(artist.getName());
+        }
+
+        if (savedInstanceState == null) {
+            // Create the detail fragment and add it to the activity
+            // using a fragment transaction.
+
+            Bundle arguments = new Bundle();
+            arguments.putParcelable(TrackListFragment.ARG_ARTIST, artist);
+
+            TrackListFragment fragment = new TrackListFragment();
+            fragment.setArguments(arguments);
+
+
+            getSupportFragmentManager().beginTransaction()
+                    .add(R.id.track_list_container, new TrackListFragment())
+                    .commit();
         }
     }
 

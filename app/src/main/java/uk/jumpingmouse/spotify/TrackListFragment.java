@@ -28,6 +28,11 @@ import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.Track;
 import kaaes.spotify.webapi.android.models.Tracks;
 import retrofit.RetrofitError;
+import uk.jumpingmouse.spotify.data.AppArtist;
+import uk.jumpingmouse.spotify.data.AppTrack;
+import uk.jumpingmouse.spotify.util.NetUtil;
+import uk.jumpingmouse.spotify.util.SpotifyUtil;
+import uk.jumpingmouse.spotify.util.UiUtil;
 
 
 /**
@@ -39,8 +44,10 @@ public class TrackListFragment extends Fragment {
 
     private static final String QUERY_COUNTRY_KEY = "country";
 
-    private static final String KEY_ARTIST = "ARTIST_NAME";
-    private static final String KEY_TRACK_LIST = "TRACK_LIST";
+    public static final String ARG_ARTIST = "ARTIST";
+
+    private static final String KEY_ARTIST = "KEY_ARTIST";
+    private static final String KEY_TRACK_LIST = "KEY_TRACK_LIST";
 
     private static final long PREVIEW_DURATION_MS = 30000;
 
@@ -59,12 +66,21 @@ public class TrackListFragment extends Fragment {
         // Indicate that the fragment can handle menu events
         this.setHasOptionsMenu(true);
 
-        appArtist = (AppArtist) getActivity().getIntent().getExtras().get("ARTIST");
+//        Intent intent = getActivity().getIntent();
+//        if (intent != null && intent.getExtras() != null) {
+//            appArtist = (AppArtist) intent.getExtras().get("ARTIST");
+//        }
     }
 
     @Override
     public final View onCreateView(final LayoutInflater inflater, final ViewGroup container,
                                     final Bundle savedInstanceState) {
+
+
+        Bundle arguments = getArguments();
+        if (arguments != null) {
+            appArtist = arguments.getParcelable(ARG_ARTIST);
+        }
 
         // Initialise the track list and adapter
         appTrackList = new ArrayList<>();
@@ -83,7 +99,9 @@ public class TrackListFragment extends Fragment {
             restoreState(savedInstanceState);
         } else {
             // Fetch the top tracks for the artist in another thread
-            fetchTracks(appArtist.getId());
+            if (appArtist != null) {
+                fetchTracks(appArtist.getId());
+            }
         }
 
         return rootView;
@@ -286,6 +304,18 @@ public class TrackListFragment extends Fragment {
 
             return spotifyApi.getService();
         }
+    }
+
+    /**
+     * A callback interface that all activities containing this fragment must
+     * implement. This mechanism allows activities to be notified of item
+     * selections.
+     */
+    public interface Callback {
+        /**
+         * List fragment callback for when an item has been selected.
+         */
+        public void onItemSelected(AppTrack track);
     }
 
 }

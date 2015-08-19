@@ -18,6 +18,8 @@ import com.squareup.picasso.Picasso;
 
 import java.util.concurrent.TimeUnit;
 
+import uk.jumpingmouse.spotify.data.AppTrack;
+
 
 /**
  * The fragment containing the track list.

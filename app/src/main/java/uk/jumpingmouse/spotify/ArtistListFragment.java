@@ -27,6 +27,10 @@ import kaaes.spotify.webapi.android.models.Artist;
 import kaaes.spotify.webapi.android.models.ArtistsPager;
 import kaaes.spotify.webapi.android.models.Pager;
 import retrofit.RetrofitError;
+import uk.jumpingmouse.spotify.data.AppArtist;
+import uk.jumpingmouse.spotify.util.NetUtil;
+import uk.jumpingmouse.spotify.util.SpotifyUtil;
+import uk.jumpingmouse.spotify.util.UiUtil;
 
 
 /**
@@ -273,6 +277,23 @@ public class ArtistListFragment extends Fragment {
 
             return spotifyApi.getService();
         }
+    }
+
+    /**
+     * A callback interface that all activities containing this fragment must
+     * implement. This mechanism allows activities to be notified of item
+     * selections.
+     */
+    public interface Callback {
+        /**
+         * List fragment callback for when an item has been selected.
+         */
+        public void onItemSelected(AppArtist artist);
+
+        /*
+         * Activities which contain an artist list must specify whether they have two panes.
+         */
+        public boolean getTwoPane();
     }
 
 }

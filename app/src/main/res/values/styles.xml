@@ -23,6 +23,8 @@
     </style>
 
     <style name="AppListStyle">
+        <!-- TODO: Remove - single choice moe is only for tablets -->
+        <item name="android:choiceMode">singleChoice</item>
     </style>
 
 </resources>

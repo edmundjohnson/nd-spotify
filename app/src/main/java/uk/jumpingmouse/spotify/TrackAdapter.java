@@ -13,6 +13,8 @@ import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
+import uk.jumpingmouse.spotify.data.AppTrack;
+
 
 /**
  * An adapter for the list items in a track list.
@@ -86,4 +88,21 @@ public class TrackAdapter extends ArrayAdapter<AppTrack> {
         context.startActivity(intent);
     }
 
+    /**
+     * Cache of the child item views.
+     * Useful for newView/bindView approach, but not for getView approach.
+     */
+    /*
+    public static class ViewHolder {
+        public final ImageView imgAlbum;
+        public final TextView txtAlbum;
+        public final TextView txtTrack;
+
+        public ViewHolder(View view) {
+            imgAlbum = (ImageView) view.findViewById(R.id.imgAlbum);
+            txtAlbum = (TextView) view.findViewById(R.id.txtAlbum);
+            txtTrack = (TextView) view.findViewById(R.id.txtTrack);
+        }
+    }
+    */
 }

@@ -1,7 +1,18 @@
-<fragment xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/track_list_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="uk.jumpingmouse.spotify.TrackListFragment"
+    tools:ignore="MergeRootFrame" />
+
+<!--
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/fragment"
     android:name="uk.jumpingmouse.spotify.TrackListFragment"
     tools:layout="@layout/track_list"
     android:layout_width="match_parent"
     android:layout_height="match_parent" />
+-->

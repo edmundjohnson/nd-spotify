@@ -1,4 +1,4 @@
-package uk.jumpingmouse.spotify;
+package uk.jumpingmouse.spotify.util;
 
 import java.util.List;
 
