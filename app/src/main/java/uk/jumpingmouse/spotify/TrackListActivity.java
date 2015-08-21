@@ -7,33 +7,30 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import uk.jumpingmouse.spotify.data.AppArtist;
+import uk.jumpingmouse.spotify.data.AppTrack;
 
 
 /**
  * Activity for displaying the list of top tracks for an artist.
  */
-public class TrackListActivity extends AppCompatActivity {
+public class TrackListActivity extends AppCompatActivity implements TrackListFragment.Callback {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_track_list);
 
-        AppArtist artist = (AppArtist) getIntent().getExtras().get("ARTIST");
-        if (getSupportActionBar() != null && artist != null) {
-            getSupportActionBar().setSubtitle(artist.getName());
-        }
+        AppArtist appArtist = (AppArtist) getIntent().getExtras().get("ARTIST");
 
         if (savedInstanceState == null) {
+            // set the action bar subtitle to the artist's name
+            if (getSupportActionBar() != null && appArtist != null) {
+                getSupportActionBar().setSubtitle(appArtist.getName());
+            }
+
             // Create the detail fragment and add it to the activity
             // using a fragment transaction.
-
-            Bundle arguments = new Bundle();
-            arguments.putParcelable(TrackListFragment.ARG_ARTIST, artist);
-
-            TrackListFragment fragment = new TrackListFragment();
-            fragment.setArguments(arguments);
-
+            TrackListFragment fragment = TrackListFragment.newInstance(appArtist);
             getSupportFragmentManager().beginTransaction()
                     .add(R.id.track_list_container, fragment)
                     .commit();
@@ -69,4 +66,14 @@ public class TrackListActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * List fragment callback for when a track has been selected from the track list.
+     * @param track the track which was selected
+     */
+    @Override
+    public void onTrackSelected(AppTrack track) {
+        Intent intent = new Intent(this, PlayerActivity.class);
+        intent.putExtra("TRACK", track);
+        startActivity(intent);
+    }
 }

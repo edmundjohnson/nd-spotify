@@ -28,6 +28,8 @@ public class PlayerFragment extends DialogFragment {
     /** The log tag for this class. */
     private static final String LOG_TAG = PlayerFragment.class.getSimpleName();
 
+    public static final String ARG_TRACK = "TRACK";
+
     private static final String KEY_TRACK = "TRACK_ID";
 
     private static final String MINUTES_SECONDS_FORMAT = "%d:%d";
@@ -35,18 +37,39 @@ public class PlayerFragment extends DialogFragment {
     /** The track which is to be played. */
     private AppTrack appTrack;
 
+    /**
+     * Instantiates and returns a new PlayerFragment for a supplied track.
+     * @param appTrack the track
+     * @return a PlayerFragment for the track
+     */
+    public static PlayerFragment newInstance(AppTrack appTrack) {
+        PlayerFragment fragment = new PlayerFragment();
+        Bundle args = new Bundle();
+        args.putParcelable(PlayerFragment.ARG_TRACK, appTrack);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+    /**
+     * Returns this fragment's track.
+     * @return this fragment's track
+     */
+    private AppTrack getTrack() {
+        Bundle arguments = getArguments();
+        return (arguments == null) ? null : (AppTrack) arguments.getParcelable(ARG_TRACK);
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // Indicate that the fragment can handle menu events
         //this.setHasOptionsMenu(true);
-
-        appTrack = (AppTrack) getActivity().getIntent().getExtras().get("TRACK");
     }
 
     @Override
     public final View onCreateView(final LayoutInflater inflater, final ViewGroup container,
                                     final Bundle savedInstanceState) {
+        appTrack = getTrack();
 
         // Inflate the fragment
         View rootView = inflater.inflate(R.layout.player, container, false);
@@ -62,11 +85,13 @@ public class PlayerFragment extends DialogFragment {
         ImageView imgAlbum = (ImageView) rootView.findViewById(R.id.imgAlbum);
         TextView txtTimeEnd = (TextView) rootView.findViewById(R.id.txtTimeEnd);
 
-        txtTrack.setText(appTrack.getTrackName());
-        txtArtist.setText(appTrack.getArtistName());
-        txtAlbum.setText(appTrack.getAlbumName());
-        Picasso.with(getActivity()).load(appTrack.getImageUrlLarge()).into(imgAlbum);
-        txtTimeEnd.setText(getHumanReadableMilliseconds(appTrack.getPreviewDuration()));
+        if (appTrack != null) {
+            txtTrack.setText(appTrack.getTrackName());
+            txtArtist.setText(appTrack.getArtistName());
+            txtAlbum.setText(appTrack.getAlbumName());
+            Picasso.with(getActivity()).load(appTrack.getImageUrlLarge()).into(imgAlbum);
+            txtTimeEnd.setText(getHumanReadableMilliseconds(appTrack.getPreviewDuration()));
+        }
 
         return rootView;
     }

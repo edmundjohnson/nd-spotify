@@ -8,6 +8,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import uk.jumpingmouse.spotify.data.AppTrack;
+
 
 /**
  * Activity for displaying the track player.
@@ -19,35 +21,32 @@ public class PlayerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
 
+        AppTrack appTrack = (AppTrack) getIntent().getExtras().get("TRACK");
+
         if (savedInstanceState == null) {
-            showDialog();
+            displayFragment(appTrack);
         }
     }
 
     /**
-     * Display the fragment in a dialog
+     * Display the fragment
      */
-    private void showDialog() {
+    private void displayFragment(AppTrack appTrack) {
         FragmentManager fragmentManager = getSupportFragmentManager();
-        PlayerFragment newFragment = new PlayerFragment();
 
-        boolean mIsLargeLayout = false;
-        if (mIsLargeLayout) {
-            // The device is using a large layout, so show the fragment as a dialog
-            newFragment.show(fragmentManager, "dialog");
-        } else {
-            // The device is smaller, so show the fragment fullscreen
-            FragmentTransaction transaction = fragmentManager.beginTransaction();
-            // For a little polish, specify a transition animation
-            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
-            // To make it fullscreen, use the 'content' root view as the container
-            // for the fragment, which is always the root view for the activity
-            transaction.add(R.id.activity_player, newFragment);
-            // The Android documentation suggests the next line,
-            // but it causes a blank screen when "back" is pressed
-            //transaction.addToBackStack(null);
-            transaction.commit();
-        }
+        PlayerFragment fragment = PlayerFragment.newInstance(appTrack);
+
+        // Show the fragment fullscreen
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        // For a little polish, specify a transition animation
+        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+        // To make it fullscreen, use the 'content' root view as the container
+        // for the fragment, which is always the root view for the activity
+        transaction.add(R.id.player_container, fragment);
+        // The Android documentation suggests the next line,
+        // but it causes a blank screen when "back" is pressed
+        //transaction.addToBackStack(null);
+        transaction.commit();
     }
 
 

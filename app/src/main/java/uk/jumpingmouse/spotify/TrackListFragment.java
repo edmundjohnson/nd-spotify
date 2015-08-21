@@ -1,7 +1,6 @@
 package uk.jumpingmouse.spotify;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -61,6 +60,28 @@ public class TrackListFragment extends Fragment {
     /** The adapter for the track list. */
     private TrackAdapter trackAdapter;
 
+    /**
+     * Instantiates and returns a new TrackListFragment for a supplied artist.
+     * @param appArtist the artist
+     * @return a TrackListFragment for the artist
+     */
+    public static TrackListFragment newInstance(AppArtist appArtist) {
+        TrackListFragment fragment = new TrackListFragment();
+        Bundle args = new Bundle();
+        args.putParcelable(TrackListFragment.ARG_ARTIST, appArtist);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+    /**
+     * Returns this fragment's artist.
+     * @return this fragment's artist
+     */
+    private AppArtist getArtist() {
+        Bundle arguments = getArguments();
+        return (arguments == null) ? null : (AppArtist) arguments.getParcelable(ARG_ARTIST);
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -71,10 +92,7 @@ public class TrackListFragment extends Fragment {
     @Override
     public final View onCreateView(final LayoutInflater inflater, final ViewGroup container,
                                     final Bundle savedInstanceState) {
-        Bundle arguments = getArguments();
-        if (arguments != null) {
-            appArtist = arguments.getParcelable(ARG_ARTIST);
-        }
+        appArtist = getArtist();
 
         // Initialise the track list and adapter
         appTrackList = new ArrayList<>();
@@ -92,14 +110,15 @@ public class TrackListFragment extends Fragment {
         listviewTrack.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView adapterView, View view, int position, long l) {
-//                // Call the item click handler in the activity in which the list is being displayed
-//                AppArtist artist = trackAdapter.getTrackList().get(position);
-//                TrackListFragment.Callback callbackActivity = (TrackListFragment.Callback) getActivity();
-//                callbackActivity.onTrackSelected(track);
-                // Display the player activity, passing in the track info for the selected track
-                Intent intent = new Intent(getActivity(), PlayerActivity.class);
-                intent.putExtra("TRACK", trackAdapter.getTrackList().get(position));
-                getActivity().startActivity(intent);
+                // Call the item click handler in the activity in which the list is being displayed
+                AppTrack track = trackAdapter.getTrackList().get(position);
+                TrackListFragment.Callback callbackActivity = (TrackListFragment.Callback) getActivity();
+                callbackActivity.onTrackSelected(track);
+
+//                // Display the player activity, passing in the track info for the selected track
+//                Intent intent = new Intent(getActivity(), PlayerActivity.class);
+//                intent.putExtra("TRACK", trackAdapter.getTrackList().get(position));
+//                getActivity().startActivity(intent);
             }
         });
 
