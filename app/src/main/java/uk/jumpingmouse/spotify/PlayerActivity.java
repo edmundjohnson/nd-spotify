@@ -8,6 +8,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import java.util.Arrays;
+import java.util.List;
+
 import uk.jumpingmouse.spotify.data.AppTrack;
 
 
@@ -21,20 +24,22 @@ public class PlayerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
 
-        AppTrack appTrack = (AppTrack) getIntent().getExtras().get("TRACK");
+        AppTrack[] appTrackArray = (AppTrack[]) getIntent().getExtras().get("TRACK_ARRAY");
+        List<AppTrack> appTrackList = Arrays.asList(appTrackArray);
+        int position = (int) getIntent().getExtras().get("POSITION");
 
         if (savedInstanceState == null) {
-            displayFragment(appTrack);
+            displayFragment(appTrackList, position);
         }
     }
 
     /**
      * Display the fragment
      */
-    private void displayFragment(AppTrack appTrack) {
+    private void displayFragment(List<AppTrack> appTrackList, int position) {
         FragmentManager fragmentManager = getSupportFragmentManager();
 
-        PlayerFragment fragment = PlayerFragment.newInstance(appTrack);
+        PlayerFragment fragment = PlayerFragment.newInstance(appTrackList, position);
 
         // Show the fragment fullscreen
         FragmentTransaction transaction = fragmentManager.beginTransaction();

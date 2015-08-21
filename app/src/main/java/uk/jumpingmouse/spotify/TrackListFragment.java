@@ -111,14 +111,8 @@ public class TrackListFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView adapterView, View view, int position, long l) {
                 // Call the item click handler in the activity in which the list is being displayed
-                AppTrack track = trackAdapter.getTrackList().get(position);
                 TrackListFragment.Callback callbackActivity = (TrackListFragment.Callback) getActivity();
-                callbackActivity.onTrackSelected(track);
-
-//                // Display the player activity, passing in the track info for the selected track
-//                Intent intent = new Intent(getActivity(), PlayerActivity.class);
-//                intent.putExtra("TRACK", trackAdapter.getTrackList().get(position));
-//                getActivity().startActivity(intent);
+                callbackActivity.onTrackSelected(trackAdapter.getTrackList(), position);
             }
         });
 
@@ -187,10 +181,10 @@ public class TrackListFragment extends Fragment {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_refresh) {
-            fetchTracks(appArtist.getId());
-            return true;
-        }
+//        if (id == R.id.action_refresh) {
+//            fetchTracks(appArtist.getId());
+//            return true;
+//        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -345,7 +339,7 @@ public class TrackListFragment extends Fragment {
         /**
          * List fragment callback for when an item has been selected.
          */
-        void onTrackSelected(AppTrack track);
+        void onTrackSelected(List<AppTrack> appTrackList, int position);
     }
 
 }

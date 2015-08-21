@@ -7,6 +7,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import java.util.List;
+
 import uk.jumpingmouse.spotify.data.AppArtist;
 import uk.jumpingmouse.spotify.data.AppTrack;
 
@@ -114,21 +116,22 @@ public class MainActivity extends AppCompatActivity
 
     /**
      * List fragment callback for when a track has been selected from the track list.
-     * @param appTrack the track which was selected
+     * @param appTrackList the list of all top tracks for the artist whose track was selected
+     * @param position the position in appTrackList of the selected track
      */
     @Override
-    public void onTrackSelected(AppTrack appTrack) {
+    public void onTrackSelected(List<AppTrack> appTrackList, int position) {
 //        if (mMultiPane) {
-            // In multi-pane mode, show the player view in this activity by displaying
-            // the player fragment in a dialog using a fragment transaction.
-            PlayerFragment fragment = PlayerFragment.newInstance(appTrack);
-            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-            fragment.show(getSupportFragmentManager(), "dialog");
-            transaction.commit();
+        // In multi-pane mode, show the player view in this activity by displaying
+        // the player fragment in a dialog using a fragment transaction.
+        PlayerFragment fragment = PlayerFragment.newInstance(appTrackList, position);
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        fragment.show(getSupportFragmentManager(), "dialog");
+        transaction.commit();
 
 //        } else {
-            // This never happens - if in single-pane mode, the track list is
-            // being displayed in the TrackListActivity
+        // This never happens - if in single-pane mode, the track list is
+        // being displayed in the TrackListActivity
 //            Intent intent = new Intent(this, PlayerActivity.class);
 //            intent.putExtra("TRACK", appTrack);
 //            startActivity(intent);

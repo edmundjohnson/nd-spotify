@@ -166,12 +166,12 @@ public class ArtistListFragment extends Fragment {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_refresh) {
-            if (editArtistName != null && editArtistName.getText() != null) {
-                fetchArtists(editArtistName.getText().toString());
-            }
-            return true;
-        }
+//        if (id == R.id.action_refresh) {
+//            if (editArtistName != null && editArtistName.getText() != null) {
+//                fetchArtists(editArtistName.getText().toString());
+//            }
+//            return true;
+//        }
         return super.onOptionsItemSelected(item);
     }
 

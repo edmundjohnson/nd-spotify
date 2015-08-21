@@ -11,11 +11,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import uk.jumpingmouse.spotify.data.AppTrack;
@@ -28,35 +31,54 @@ public class PlayerFragment extends DialogFragment {
     /** The log tag for this class. */
     private static final String LOG_TAG = PlayerFragment.class.getSimpleName();
 
-    public static final String ARG_TRACK = "TRACK";
+    public static final String ARG_TRACKS = "TRACK_ARRAY";
+    public static final String ARG_POSITION = "POSITION";
 
-    private static final String KEY_TRACK = "TRACK_ID";
+    private static final String KEY_TRACKS = "KEY_TRACK_ARRAY";
+    private static final String KEY_POSITION = "KEY_POSITION";
 
     private static final String MINUTES_SECONDS_FORMAT = "%d:%d";
 
-    /** The track which is to be played. */
-    private AppTrack appTrack;
+    /** The list of tracks available to the player. */
+    private AppTrack[] appTrackArray;
+    /** The position in the list of the currently playing track. */
+    private int position;
 
-    /**
-     * Instantiates and returns a new PlayerFragment for a supplied track.
-     * @param appTrack the track
-     * @return a PlayerFragment for the track
-     */
-    public static PlayerFragment newInstance(AppTrack appTrack) {
+    // Display elements
+    private TextView txtTrack;
+    private TextView txtArtist;
+    private TextView txtAlbum;
+    private ImageView imgAlbum;
+    private TextView txtTimeEnd;
+
+    public static PlayerFragment newInstance(List<AppTrack> appTrackList, int position) {
         PlayerFragment fragment = new PlayerFragment();
         Bundle args = new Bundle();
-        args.putParcelable(PlayerFragment.ARG_TRACK, appTrack);
+        args.putParcelableArray(PlayerFragment.ARG_TRACKS, appTrackList.toArray(new AppTrack[appTrackList.size()]));
+        args.putInt(PlayerFragment.ARG_POSITION, position);
         fragment.setArguments(args);
         return fragment;
     }
 
     /**
-     * Returns this fragment's track.
-     * @return this fragment's track
+     * Returns an array of this fragment's tracks.
+     * @return an array of this fragment's tracks
      */
-    private AppTrack getTrack() {
+    private AppTrack[] getTrackArray() {
         Bundle arguments = getArguments();
-        return (arguments == null) ? null : (AppTrack) arguments.getParcelable(ARG_TRACK);
+        if (arguments == null) {
+            return null;
+        }
+        return (AppTrack[]) arguments.getParcelableArray(ARG_TRACKS);
+    }
+
+    /**
+     * Returns the position in the list of the initially selected track.
+     * @return the position in the list of the initially selected track
+     */
+    private int getInitialPosition() {
+        Bundle arguments = getArguments();
+        return (arguments == null) ? -1 : arguments.getInt(ARG_POSITION);
     }
 
     @Override
@@ -69,7 +91,8 @@ public class PlayerFragment extends DialogFragment {
     @Override
     public final View onCreateView(final LayoutInflater inflater, final ViewGroup container,
                                     final Bundle savedInstanceState) {
-        appTrack = getTrack();
+        appTrackArray = getTrackArray();
+        position = getInitialPosition();
 
         // Inflate the fragment
         View rootView = inflater.inflate(R.layout.player, container, false);
@@ -79,21 +102,70 @@ public class PlayerFragment extends DialogFragment {
             restoreState(savedInstanceState);
         }
 
-        TextView txtTrack = (TextView) rootView.findViewById(R.id.txtTrack);
-        TextView txtArtist = (TextView) rootView.findViewById(R.id.txtArtist);
-        TextView txtAlbum = (TextView) rootView.findViewById(R.id.txtAlbum);
-        ImageView imgAlbum = (ImageView) rootView.findViewById(R.id.imgAlbum);
-        TextView txtTimeEnd = (TextView) rootView.findViewById(R.id.txtTimeEnd);
+        txtTrack = (TextView) rootView.findViewById(R.id.txtTrack);
+        txtArtist = (TextView) rootView.findViewById(R.id.txtArtist);
+        txtAlbum = (TextView) rootView.findViewById(R.id.txtAlbum);
+        imgAlbum = (ImageView) rootView.findViewById(R.id.imgAlbum);
+        txtTimeEnd = (TextView) rootView.findViewById(R.id.txtTimeEnd);
+        Button btnPlayPause = (Button)  rootView.findViewById(R.id.btnPlayPause);
+        Button btnPrev = (Button)  rootView.findViewById(R.id.btnPrev);
+        Button btnNext = (Button)  rootView.findViewById(R.id.btnNext);
 
-        if (appTrack != null) {
-            txtTrack.setText(appTrack.getTrackName());
-            txtArtist.setText(appTrack.getArtistName());
-            txtAlbum.setText(appTrack.getAlbumName());
-            Picasso.with(getActivity()).load(appTrack.getImageUrlLarge()).into(imgAlbum);
-            txtTimeEnd.setText(getHumanReadableMilliseconds(appTrack.getPreviewDuration()));
-        }
+        btnPlayPause.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                playPause();
+            }
+        });
+
+        btnPrev.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                prevTrack();
+            }
+        });
+
+        btnNext.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                nextTrack();
+            }
+        });
+
+        displayTrack(position);
 
         return rootView;
+    }
+
+    private void playPause() {
+        Toast.makeText(getActivity(), "Play", Toast.LENGTH_SHORT).show();
+    }
+
+    private void prevTrack() {
+        if (position > 0) {
+            position--;
+        }
+        displayTrack(position);
+    }
+
+    private void nextTrack() {
+        if (position < appTrackArray.length - 1) {
+            position++;
+        }
+        displayTrack(position);
+    }
+
+    private void displayTrack(int position) {
+        if (position >= 0 && position < appTrackArray.length) {
+            AppTrack appTrack = appTrackArray[position];
+            if (appTrack != null) {
+                txtTrack.setText(appTrack.getTrackName());
+                txtArtist.setText(appTrack.getArtistName());
+                txtAlbum.setText(appTrack.getAlbumName());
+                Picasso.with(getActivity()).load(appTrack.getImageUrlLarge()).into(imgAlbum);
+                txtTimeEnd.setText(getHumanReadableMilliseconds(appTrack.getPreviewDuration()));
+            }
+        }
     }
 
     private String getHumanReadableMilliseconds(long millis) {
@@ -121,7 +193,8 @@ public class PlayerFragment extends DialogFragment {
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        outState.putParcelable(KEY_TRACK, appTrack);
+        outState.putParcelableArray(KEY_TRACKS, appTrackArray);
+        outState.putInt(KEY_POSITION, position);
 
         super.onSaveInstanceState(outState);
     }
@@ -140,8 +213,10 @@ public class PlayerFragment extends DialogFragment {
      */
     private void restoreState(final Bundle savedInstanceState) {
         if (savedInstanceState != null) {
-            // restore the track
-            appTrack = savedInstanceState.getParcelable(KEY_TRACK);
+            // restore the track list and position
+            appTrackArray = (AppTrack[]) savedInstanceState.getParcelableArray(KEY_TRACKS);
+            // restore the track list and position
+            position = savedInstanceState.getInt(KEY_POSITION);
         }
     }
 

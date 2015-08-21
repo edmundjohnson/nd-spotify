@@ -6,6 +6,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import java.util.List;
+
 import uk.jumpingmouse.spotify.data.AppArtist;
 import uk.jumpingmouse.spotify.data.AppTrack;
 
@@ -68,12 +70,15 @@ public class TrackListActivity extends AppCompatActivity implements TrackListFra
 
     /**
      * List fragment callback for when a track has been selected from the track list.
-     * @param track the track which was selected
+     * @param appTrackList the list of all top tracks for the artist whose track was selected
+     * @param position the position in appTrackList of the selected track
      */
     @Override
-    public void onTrackSelected(AppTrack track) {
+    public void onTrackSelected(List<AppTrack> appTrackList, int position) {
         Intent intent = new Intent(this, PlayerActivity.class);
-        intent.putExtra("TRACK", track);
+        intent.putExtra("TRACK_ARRAY", appTrackList.toArray(new AppTrack[appTrackList.size()]));
+        intent.putExtra("POSITION", position);
         startActivity(intent);
     }
+
 }
