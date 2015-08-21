@@ -1,7 +1,6 @@
 package uk.jumpingmouse.spotify;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -66,26 +65,11 @@ public class TrackAdapter extends ArrayAdapter<AppTrack> {
         TextView txtAlbum = (TextView) itemView.findViewById(R.id.txtAlbum);
         txtAlbum.setText(track.getAlbumName());
 
-        // Set the click handler for the item
-        itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(final View view) {
-                handleItemClick(position);
-            }
-        });
-
         return itemView;
     }
 
-    /**
-     * Handler method invoked when an item is clicked.
-     * @param position the item's position in the list
-     */
-    private void handleItemClick(final int position) {
-        // Display the player activity, passing in the track info for the selected track
-        Intent intent = new Intent(context, PlayerActivity.class);
-        intent.putExtra("TRACK", trackList.get(position));
-        context.startActivity(intent);
+    public List<AppTrack> getTrackList() {
+        return trackList;
     }
 
     /**

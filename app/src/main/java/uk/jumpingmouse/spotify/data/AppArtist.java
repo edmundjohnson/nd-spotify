@@ -71,4 +71,5 @@ public class AppArtist implements Parcelable {
     public String getImageUrlSmall() {
         return imageUrlSmall;
     }
+
 }

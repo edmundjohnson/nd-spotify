@@ -20,7 +20,7 @@ public class TrackListActivity extends AppCompatActivity {
         setContentView(R.layout.activity_track_list);
 
         AppArtist artist = (AppArtist) getIntent().getExtras().get("ARTIST");
-        if (getSupportActionBar() != null) {
+        if (getSupportActionBar() != null && artist != null) {
             getSupportActionBar().setSubtitle(artist.getName());
         }
 
@@ -34,9 +34,8 @@ public class TrackListActivity extends AppCompatActivity {
             TrackListFragment fragment = new TrackListFragment();
             fragment.setArguments(arguments);
 
-
             getSupportFragmentManager().beginTransaction()
-                    .add(R.id.track_list_container, new TrackListFragment())
+                    .add(R.id.track_list_container, fragment)
                     .commit();
         }
     }

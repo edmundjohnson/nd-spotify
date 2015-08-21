@@ -1,7 +1,6 @@
 package uk.jumpingmouse.spotify;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -48,7 +47,7 @@ public class ArtistAdapter extends ArrayAdapter<AppArtist> {
     @Override
     public View getView(final int position, View itemView, ViewGroup parent) {
         // Get the artist object from the list of artists
-        AppArtist artist = getItem(position);
+        final AppArtist artist = getItem(position);
 
         // If the recycled view is null, inflate the list item layout and assign it
         if (itemView == null) {
@@ -62,34 +61,11 @@ public class ArtistAdapter extends ArrayAdapter<AppArtist> {
         TextView txtArtist = (TextView) itemView.findViewById(R.id.txtArtist);
         txtArtist.setText(artist.getName());
 
-        // Set the click handler for the item
-        itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(final View view) {
-                handleItemClick(position);
-            }
-        });
-
         return itemView;
     }
 
-    /**
-     * Handler method invoked when an item is clicked.
-     * @param position the item's position in the list
-     */
-    private void handleItemClick(final int position) {
-        // Display the top tracks for the selected artist in the track list activity
-        // or fragment, passing in the artist info
-        AppArtist artist = artistList.get(position);
-        ArtistListFragment.Callback callbackActivity = (ArtistListFragment.Callback) context;
-
-        if (callbackActivity.getTwoPane()) {
-            callbackActivity.onItemSelected(artist);
-        } else {
-            Intent intent = new Intent(context, TrackListActivity.class);
-            intent.putExtra("ARTIST", artist);
-            context.startActivity(intent);
-        }
+    public List<AppArtist> getArtistList() {
+        return artistList;
     }
 
     /**

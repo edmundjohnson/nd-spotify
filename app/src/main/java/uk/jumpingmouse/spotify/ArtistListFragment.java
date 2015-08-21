@@ -13,7 +13,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
+import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 
@@ -46,7 +46,7 @@ public class ArtistListFragment extends Fragment {
     private EditText editArtistName;
 
     private ArrayList<AppArtist> appArtistList;
-    private ArrayAdapter<AppArtist> artistAdapter;
+    private ArtistAdapter artistAdapter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -91,6 +91,17 @@ public class ArtistListFragment extends Fragment {
         // Attach the adapter to the ListView
         listviewArtist.setAdapter(artistAdapter);
 
+        // Create a listener for clicking on the list item.
+        listviewArtist.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView adapterView, View view, int position, long l) {
+                // Call the item click handler in the activity in which the list is being displayed
+                AppArtist artist = artistAdapter.getArtistList().get(position);
+                ArtistListFragment.Callback callbackActivity = (ArtistListFragment.Callback) getActivity();
+                callbackActivity.onArtistSelected(artist);
+            }
+        });
+
         // Restore any saved state
         if (savedInstanceState != null) {
             restoreState(savedInstanceState);
@@ -131,8 +142,10 @@ public class ArtistListFragment extends Fragment {
             // restore the artist list
             List<AppArtist> updatedAppArtistList = savedInstanceState.getParcelableArrayList(KEY_ARTIST_LIST);
             appArtistList.clear();
-            for (AppArtist appArtist : updatedAppArtistList) {
-                appArtistList.add(appArtist);
+            if (updatedAppArtistList != null) {
+                for (AppArtist appArtist : updatedAppArtistList) {
+                    appArtistList.add(appArtist);
+                }
             }
             artistAdapter.notifyDataSetChanged();
         }
@@ -286,14 +299,9 @@ public class ArtistListFragment extends Fragment {
      */
     public interface Callback {
         /**
-         * List fragment callback for when an item has been selected.
+         * List fragment callback for when an artist has been selected.
          */
-        public void onItemSelected(AppArtist artist);
-
-        /*
-         * Activities which contain an artist list must specify whether they have two panes.
-         */
-        public boolean getTwoPane();
+        void onArtistSelected(AppArtist artist);
     }
 
 }

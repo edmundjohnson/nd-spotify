@@ -24,12 +24,14 @@ public class PlayerActivity extends AppCompatActivity {
         }
     }
 
-
-    public void showDialog() {
+    /**
+     * Display the fragment in a dialog
+     */
+    private void showDialog() {
         FragmentManager fragmentManager = getSupportFragmentManager();
         PlayerFragment newFragment = new PlayerFragment();
 
-        boolean mIsLargeLayout = true;
+        boolean mIsLargeLayout = false;
         if (mIsLargeLayout) {
             // The device is using a large layout, so show the fragment as a dialog
             newFragment.show(fragmentManager, "dialog");

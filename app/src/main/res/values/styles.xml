@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
 
     <!-- Base application theme. -->
@@ -5,6 +6,11 @@
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/green</item>
         <item name="colorPrimaryDark">@color/dark_green</item>
+        <item name="colorAccent">@color/dark_green</item>
+    </style>
+
+    <!-- Settings activity theme. -->
+    <style name="SettingsTheme" parent="AppTheme">
     </style>
 
     <!-- Theme for activity being a dialog (with no title) on large devices. -->
@@ -23,8 +29,6 @@
     </style>
 
     <style name="AppListStyle">
-        <!-- TODO: Remove - single choice moe is only for tablets -->
-        <item name="android:choiceMode">singleChoice</item>
     </style>
 
 </resources>

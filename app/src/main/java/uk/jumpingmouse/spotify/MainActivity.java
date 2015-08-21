@@ -16,7 +16,7 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
 
     private static final String TRACKLISTFRAGMENT_TAG = "TRACK_LIST_FRAGMENT_TAG";
 
-    private boolean mTwoPane;
+    private boolean mMultiPane;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
             // The detail container view will be present only in the large-screen layouts
             // (res/layout-sw600dp). If this view is present, then the activity should be
             // in two-pane mode.
-            mTwoPane = true;
+            mMultiPane = true;
             // In two-pane mode, show the detail view in this activity by
             // adding or replacing the detail fragment using a
             // fragment transaction.
@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
                         .commit();
             }
         } else {
-            mTwoPane = false;
+            mMultiPane = false;
             // shadow not wanted in single pane mode
             if (getSupportActionBar() != null) {
                 getSupportActionBar().setElevation(0f);
@@ -90,12 +90,11 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
 
     /**
      * List fragment callback for when an item has been selected.
-     *
-     * @param artist
+     * @param artist  the artist which was clicked
      */
     @Override
-    public void onItemSelected(AppArtist artist) {
-        if (mTwoPane) {
+    public void onArtistSelected(AppArtist artist) {
+        if (mMultiPane) {
             // In two-pane mode, show the detail view in this activity by
             // adding or replacing the detail fragment using a
             // fragment transaction.
@@ -113,10 +112,6 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
             intent.putExtra("ARTIST", artist);
             startActivity(intent);
         }
-    }
-
-    public boolean getTwoPane() {
-        return mTwoPane;
     }
 
 }
