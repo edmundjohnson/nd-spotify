@@ -43,10 +43,12 @@ public class ArtistListFragment extends Fragment {
     private static final String KEY_SEARCH_STRING = "SEARCH_STRING";
     private static final String KEY_ARTIST_LIST = "ARTIST_LIST";
 
-    private EditText editArtistName;
+    private EditText mEditArtistName;
 
-    private ArrayList<AppArtist> appArtistList;
-    private ArtistAdapter artistAdapter;
+    private ArrayList<AppArtist> mArtistList;
+    private ArtistAdapter mArtistAdapter;
+
+    private View mRootView;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -60,25 +62,25 @@ public class ArtistListFragment extends Fragment {
                                     final Bundle savedInstanceState) {
 
         // Initialise the artist list and adapter
-        appArtistList = new ArrayList<>();
-        artistAdapter = new ArtistAdapter(getActivity(), appArtistList);
+        mArtistList = new ArrayList<>();
+        mArtistAdapter = new ArtistAdapter(getActivity(), mArtistList);
 
         // Inflate the fragment
-        View rootView = inflater.inflate(R.layout.artist_list, container, false);
+        mRootView = inflater.inflate(R.layout.artist_list, container, false);
 
         // Get a reference to the artist name edit text box
-        editArtistName = (EditText) rootView.findViewById(R.id.editArtistName);
+        mEditArtistName = (EditText) mRootView.findViewById(R.id.editArtistName);
 
-        editArtistName.setOnKeyListener(new View.OnKeyListener() {
+        mEditArtistName.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View view, int keyCode, KeyEvent keyEvent) {
                 if (keyEvent.getAction() != KeyEvent.ACTION_DOWN) {
                     return false;
                 }
-                if (keyCode == KeyEvent.KEYCODE_ENTER){
+                if (keyCode == KeyEvent.KEYCODE_ENTER) {
                     Editable editable = ((EditText) view).getText();
                     if (editable != null) {
-                        fetchArtists(editable.toString());
+                        artistNameEntered(editable.toString());
                     }
                     return true;
                 }
@@ -87,16 +89,16 @@ public class ArtistListFragment extends Fragment {
         });
 
         // Get a reference to the ListView
-        ListView listviewArtist = (ListView) rootView.findViewById(R.id.listview_artist);
+        ListView listviewArtist = (ListView) mRootView.findViewById(R.id.listview_artist);
         // Attach the adapter to the ListView
-        listviewArtist.setAdapter(artistAdapter);
+        listviewArtist.setAdapter(mArtistAdapter);
 
         // Create a listener for clicking on the list item.
         listviewArtist.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView adapterView, View view, int position, long l) {
                 // Call the item click handler in the activity in which the list is being displayed
-                AppArtist artist = artistAdapter.getArtistList().get(position);
+                AppArtist artist = mArtistAdapter.getArtistList().get(position);
                 ArtistListFragment.Callback callbackActivity = (ArtistListFragment.Callback) getActivity();
                 callbackActivity.onArtistSelected(artist);
             }
@@ -107,17 +109,17 @@ public class ArtistListFragment extends Fragment {
             restoreState(savedInstanceState);
         }
 
-        return rootView;
+        return mRootView;
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        if (editArtistName != null && editArtistName.getText() != null) {
-            outState.putString(KEY_SEARCH_STRING, editArtistName.getText().toString());
+        if (mEditArtistName != null && mEditArtistName.getText() != null) {
+            outState.putString(KEY_SEARCH_STRING, mEditArtistName.getText().toString());
         } else {
             outState.putString(KEY_SEARCH_STRING, "");
         }
-        outState.putParcelableArrayList(KEY_ARTIST_LIST, appArtistList);
+        outState.putParcelableArrayList(KEY_ARTIST_LIST, mArtistList);
 
         super.onSaveInstanceState(outState);
     }
@@ -138,16 +140,16 @@ public class ArtistListFragment extends Fragment {
         if (savedInstanceState != null) {
             // restore the search string
             String searchString = savedInstanceState.getString(KEY_SEARCH_STRING);
-            editArtistName.setText(searchString);
+            mEditArtistName.setText(searchString);
             // restore the artist list
             List<AppArtist> updatedAppArtistList = savedInstanceState.getParcelableArrayList(KEY_ARTIST_LIST);
-            appArtistList.clear();
+            mArtistList.clear();
             if (updatedAppArtistList != null) {
                 for (AppArtist appArtist : updatedAppArtistList) {
-                    appArtistList.add(appArtist);
+                    mArtistList.add(appArtist);
                 }
             }
-            artistAdapter.notifyDataSetChanged();
+            mArtistAdapter.notifyDataSetChanged();
         }
     }
 
@@ -165,10 +167,10 @@ public class ArtistListFragment extends Fragment {
      */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
+//        int id = item.getItemId();
 //        if (id == R.id.action_refresh) {
-//            if (editArtistName != null && editArtistName.getText() != null) {
-//                fetchArtists(editArtistName.getText().toString());
+//            if (mEditArtistName != null && mEditArtistName.getText() != null) {
+//                artistNameEntered(mEditArtistName.getText().toString());
 //            }
 //            return true;
 //        }
@@ -176,12 +178,22 @@ public class ArtistListFragment extends Fragment {
     }
 
     /**
-     * Invoke an async task to refresh the list of artists.
+     * Perform actions on entry of an artist name, i.e. inform the calling activity and
+     * invoke an async task to refresh the list of artists.
      * @param artistName the string against which to match artist names.
      */
-    private void fetchArtists(String artistName) {
+    private void artistNameEntered(String artistName) {
         if (artistName != null && !artistName.isEmpty()) {
             if (NetUtil.isConnected(getActivity())) {
+                // Deactivate any list item view which is activated
+                ListView artistListView = (ListView) mRootView.findViewById(R.id.listview_artist);
+                int checkedItem = artistListView.getCheckedItemPosition();
+                artistListView.setItemChecked(checkedItem, false);
+                // Tell the calling activity that a new artist has been selected
+                // e.g. so it can clear any displayed tracks
+                ArtistListFragment.Callback callbackActivity = (ArtistListFragment.Callback) getActivity();
+                callbackActivity.onArtistNameEntered();
+                // Get the artists which match the entered name
                 new FetchArtistsTask().execute(artistName);
             } else {
                 UiUtil.displayMessage(getActivity(), getString(R.string.error_not_connected));
@@ -269,12 +281,12 @@ public class ArtistListFragment extends Fragment {
             }
 
             // update the adapter's data object
-            appArtistList.clear();
+            mArtistList.clear();
             for (AppArtist appArtist : updatedArtistList) {
-                appArtistList.add(appArtist);
+                mArtistList.add(appArtist);
             }
             // notify the adapter that its data object has changed
-            artistAdapter.notifyDataSetChanged();
+            mArtistAdapter.notifyDataSetChanged();
         }
 
         /**
@@ -298,6 +310,11 @@ public class ArtistListFragment extends Fragment {
      * selections.
      */
     public interface Callback {
+        /**
+         * List fragment callback for when an artist has been selected.
+         */
+        void onArtistNameEntered();
+
         /**
          * List fragment callback for when an artist has been selected.
          */

@@ -95,14 +95,29 @@ public class MainActivity extends AppCompatActivity
     }
 
     /**
+     * List fragment callback for when a new artist name has been entered.
+     */
+    @Override
+    public void onArtistNameEntered() {
+        if (mMultiPane) {
+            // Remove any tracks which are being displayed for the previously
+            // entered artist
+            TrackListFragment fragment = TrackListFragment.newInstance(null);
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.track_list_container, fragment, TRACKLISTFRAGMENT_TAG)
+                    .commit();
+        }
+    }
+
+    /**
      * List fragment callback for when an artist has been selected from the artist list.
      * @param appArtist the artist which was selected
      */
     @Override
     public void onArtistSelected(AppArtist appArtist) {
         if (mMultiPane) {
-            // In multi-pane mode, show the detail view in this activity by adding or
-            // replacing the detail fragment using a fragment transaction.
+            // Show the track list view in this activity by adding or
+            // replacing the track list fragment using a fragment transaction.
             TrackListFragment fragment = TrackListFragment.newInstance(appArtist);
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.track_list_container, fragment, TRACKLISTFRAGMENT_TAG)
