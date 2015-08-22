@@ -6,6 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import uk.jumpingmouse.spotify.data.AppArtist;
@@ -76,7 +77,7 @@ public class TrackListActivity extends AppCompatActivity implements TrackListFra
     @Override
     public void onTrackSelected(List<AppTrack> appTrackList, int position) {
         Intent intent = new Intent(this, PlayerActivity.class);
-        intent.putExtra("TRACK_ARRAY", appTrackList.toArray(new AppTrack[appTrackList.size()]));
+        intent.putParcelableArrayListExtra("TRACK_LIST", (ArrayList) appTrackList);
         intent.putExtra("POSITION", position);
         startActivity(intent);
     }

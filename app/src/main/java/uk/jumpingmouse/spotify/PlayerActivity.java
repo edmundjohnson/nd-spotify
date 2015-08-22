@@ -8,7 +8,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import java.util.Arrays;
 import java.util.List;
 
 import uk.jumpingmouse.spotify.data.AppTrack;
@@ -24,8 +23,7 @@ public class PlayerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
 
-        AppTrack[] appTrackArray = (AppTrack[]) getIntent().getExtras().get("TRACK_ARRAY");
-        List<AppTrack> appTrackList = Arrays.asList(appTrackArray);
+        List<AppTrack> appTrackList = getIntent().getExtras().getParcelableArrayList("TRACK_LIST");
         int position = (int) getIntent().getExtras().get("POSITION");
 
         if (savedInstanceState == null) {
