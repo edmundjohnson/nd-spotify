@@ -1,10 +1,14 @@
 package uk.jumpingmouse.spotify;
 
 import android.app.Dialog;
+import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
@@ -18,6 +22,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,7 +38,7 @@ import uk.jumpingmouse.spotify.data.AppTrack;
 /**
  * The fragment containing the track player.
  */
-public class PlayerFragment extends DialogFragment {
+public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarChangeListener {
     /**
      * The log tag for this class.
      */
@@ -45,7 +50,11 @@ public class PlayerFragment extends DialogFragment {
     private static final String KEY_TRACKS = "KEY_TRACK_ARRAY";
     private static final String KEY_POSITION = "KEY_POSITION";
 
-    private static final String MINUTES_SECONDS_FORMAT = "%d:%d";
+    private static final String MINUTES_SECONDS_FORMAT = "%d:%02d";
+
+    private static final String WIFI_LOCK_TAG = "WIFI_LOCK_TAG";
+
+    private static final int SEEKBAR_INCREMENTS = 300;
 
     /**
      * The list of tracks available to the player.
@@ -60,6 +69,9 @@ public class PlayerFragment extends DialogFragment {
      * The media player object.
      */
     private MediaPlayer mMediaPlayer;
+
+    /** The wifi lock object. */
+    private WifiManager.WifiLock mWifiLock;
 
     /**
      * The media player states, see:
@@ -76,9 +88,7 @@ public class PlayerFragment extends DialogFragment {
         PLAYBACK_COMPLETED,
         ERROR,
         END
-    }
-
-    ;
+    };
 
     /**
      * The current state of the media player.
@@ -90,7 +100,9 @@ public class PlayerFragment extends DialogFragment {
     private TextView txtArtist;
     private TextView txtAlbum;
     private ImageView imgAlbum;
+    private TextView txtTimePosition;
     private TextView txtTimeEnd;
+    private SeekBar sbProgress;
     private Button btnPlayPause;
 
     @Override
@@ -118,10 +130,16 @@ public class PlayerFragment extends DialogFragment {
         txtArtist = (TextView) rootView.findViewById(R.id.txtArtist);
         txtAlbum = (TextView) rootView.findViewById(R.id.txtAlbum);
         imgAlbum = (ImageView) rootView.findViewById(R.id.imgAlbum);
+        txtTimePosition = (TextView) rootView.findViewById(R.id.txtTimePosition);
         txtTimeEnd = (TextView) rootView.findViewById(R.id.txtTimeEnd);
         btnPlayPause = (Button) rootView.findViewById(R.id.btnPlayPause);
+        sbProgress = (SeekBar) rootView.findViewById(R.id.sbProgress);
         Button btnPrev = (Button) rootView.findViewById(R.id.btnPrev);
         Button btnNext = (Button) rootView.findViewById(R.id.btnNext);
+
+        sbProgress.setProgress(0);
+        sbProgress.setMax(SEEKBAR_INCREMENTS);
+        sbProgress.setOnSeekBarChangeListener(this);
 
         //--------------------------------------------------------
         // Callbacks for buttons
@@ -157,6 +175,7 @@ public class PlayerFragment extends DialogFragment {
     private MediaPlayer createMediaPlayer() {
         MediaPlayer mediaPlayer = new MediaPlayer();
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        mediaPlayer.setWakeMode(getActivity(), PowerManager.PARTIAL_WAKE_LOCK);
 
         //--------------------------------------------------------
         // Callbacks for media player events
@@ -187,6 +206,21 @@ public class PlayerFragment extends DialogFragment {
         });
 
         return mediaPlayer;
+    }
+
+    private void acquireWifiLock() {
+        if (mWifiLock == null) {
+            WifiManager wifiManager = (WifiManager) getActivity().getSystemService(Context.WIFI_SERVICE);
+            mWifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, WIFI_LOCK_TAG);
+            mWifiLock.acquire();
+        }
+    }
+
+    private void releaseWifiLock() {
+        if (mWifiLock != null) {
+            mWifiLock.release();
+            mWifiLock = null;
+        }
     }
 
     @Override
@@ -226,6 +260,7 @@ public class PlayerFragment extends DialogFragment {
         if (mMediaPlayer != null
                 && mPlayerState == PlayerState.INITIALISED
                 || mPlayerState == PlayerState.STOPPED) {
+            acquireWifiLock();
             mMediaPlayer.prepareAsync();
             mPlayerState = PlayerState.PREPARING;
         }
@@ -243,7 +278,9 @@ public class PlayerFragment extends DialogFragment {
                 || mPlayerState == PlayerState.PAUSED
                 || mPlayerState == PlayerState.PLAYBACK_COMPLETED)
         displayPlayPauseButtonAsPause();
-        mMediaPlayer.start();
+        acquireWifiLock();
+//        mMediaPlayer.start();
+        new MonitorProgressTask().execute();
         mPlayerState = PlayerState.STARTED;
     }
 
@@ -253,6 +290,7 @@ public class PlayerFragment extends DialogFragment {
                 && mPlayerState == PlayerState.STARTED) {
             displayPlayPauseButtonAsPlay();
             mMediaPlayer.pause();
+            releaseWifiLock();
             mPlayerState = PlayerState.PAUSED;
         }
     }
@@ -265,6 +303,7 @@ public class PlayerFragment extends DialogFragment {
                 || mPlayerState == PlayerState.PAUSED
                 || mPlayerState == PlayerState.PLAYBACK_COMPLETED) {
             mMediaPlayer.stop();
+            releaseWifiLock();
             displayPlayPauseButtonAsPlay();
             mPlayerState = PlayerState.STOPPED;
         }
@@ -273,6 +312,11 @@ public class PlayerFragment extends DialogFragment {
     /** Change state to PLAYBACK_COMPLETED. */
     private void changeStatePlaybackCompleted() {
         displayPlayPauseButtonAsPlay();
+        // The last progress check may have been before the end of the song
+        sbProgress.setProgress(SEEKBAR_INCREMENTS);
+        txtTimePosition.setText(getHumanReadableMilliseconds(getTrack().getPreviewDuration()));
+
+        releaseWifiLock();
         mPlayerState = PlayerState.PLAYBACK_COMPLETED;
     }
 
@@ -283,6 +327,7 @@ public class PlayerFragment extends DialogFragment {
             mMediaPlayer.release();
             mMediaPlayer = null;
         }
+        releaseWifiLock();
         mPlayerState = PlayerState.END;
     }
 
@@ -357,6 +402,8 @@ public class PlayerFragment extends DialogFragment {
                 txtArtist.setText(appTrack.getArtistName());
                 txtAlbum.setText(appTrack.getAlbumName());
                 Picasso.with(getActivity()).load(appTrack.getImageUrlLarge()).into(imgAlbum);
+                sbProgress.setProgress(0);
+                txtTimePosition.setText(getHumanReadableSeconds(0));
                 txtTimeEnd.setText(getHumanReadableMilliseconds(appTrack.getPreviewDuration()));
             }
 
@@ -370,15 +417,22 @@ public class PlayerFragment extends DialogFragment {
     }
 
     /**
-     * Convert a time in long format to a human-readable string.
-     * @param millis a time as a long
-     * @return the time in human-readable format
+     * Convert a time interval as a number of milliseconds into a human-readable string.
+     * @param millis the time interval in milliseconds
+     * @return the time interval in human-readable format
      */
     private String getHumanReadableMilliseconds(long millis) {
-        long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
-        long seconds = TimeUnit.MILLISECONDS.toSeconds(millis) -
-                            TimeUnit.MINUTES.toSeconds(minutes);
+        return getHumanReadableSeconds(TimeUnit.MILLISECONDS.toSeconds(millis));
+    }
 
+    /**
+     * Convert a time interval as a number of seconds into a human-readable string.
+     * @param totalSeconds the time interval in seconds
+     * @return the time interval in human-readable format
+     */
+    private String getHumanReadableSeconds(long totalSeconds) {
+        long minutes = TimeUnit.SECONDS.toMinutes(totalSeconds);
+        long seconds = totalSeconds - TimeUnit.MINUTES.toSeconds(minutes);
         return String.format(MINUTES_SECONDS_FORMAT, minutes, seconds);
     }
 
@@ -503,6 +557,77 @@ public class PlayerFragment extends DialogFragment {
             return null;
         }
         return Uri.parse(track.getPreviewUrl());
+
+    }
+
+    //----------------------------------------------------------------
+    // Seekbar change methods
+
+    /**
+     * Called when the seekbar position moves
+     * @param seekBar the seekbar
+     * @param progress the position of the seekbar as a percentage
+     * @param fromUser whether the seekbar was moved by the user
+     */
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+
+        if(fromUser){
+            int seconds = progress / 10;
+            int millis = (int) TimeUnit.SECONDS.toMillis(seconds);
+            // change to the new position in the song
+            mMediaPlayer.seekTo(millis);
+            // Update the time position text
+            txtTimePosition.setText(getHumanReadableSeconds(seconds));
+        }
+
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+    }
+
+    /**
+     * Background task to monitor the progress of the song and update the seekbar and
+     * song position indicator accordingly.
+     */
+    private class MonitorProgressTask extends AsyncTask<Void, Integer, Void> {
+        private static final int CHECK_INTERVAL_MS = 90;
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            mMediaPlayer.start();
+            while (mMediaPlayer.isPlaying()) {
+                publishProgress((int) mMediaPlayer.getCurrentPosition());
+                try {
+                    Thread.sleep(CHECK_INTERVAL_MS);
+                } catch (InterruptedException e) {
+                    Log.e(LOG_TAG, String.format("InterruptedException in monitor task: %s", e.toString()));
+                    break;
+                }
+                // Escape early if cancel() is called
+                if (isCancelled()) break;
+
+                //TODO
+                // Move all the media player calls here, and execute them depending on the
+                // state of mPlayerState
+                // BUT... the AsyncTask would be destroyed anyway, so no point ???
+                // Research Reto's thing about fragments with no UI
+                // implement a service??? No, submit as is first
+            }
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... songPositionMillis) {
+            int seconds = (int) TimeUnit.MILLISECONDS.toSeconds(songPositionMillis[0]);
+            sbProgress.setProgress(songPositionMillis[0] / 100);
+            txtTimePosition.setText(getHumanReadableSeconds(seconds));
+        }
 
     }
 }

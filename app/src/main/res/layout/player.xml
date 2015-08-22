@@ -55,6 +55,7 @@
             tools:text="Breathe" />
 
         <SeekBar
+            android:id="@+id/sbProgress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_horizontal"
@@ -73,13 +74,13 @@
             android:gravity="center_horizontal">
 
             <TextView
+                android:id="@+id/txtTimePosition"
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:gravity="left"
                 android:fontFamily="sans-serif-light"
                 android:textAppearance="?android:textAppearanceSmall"
-                android:text="@string/start_time"
                 tools:text="0:00" />
 
             <TextView
