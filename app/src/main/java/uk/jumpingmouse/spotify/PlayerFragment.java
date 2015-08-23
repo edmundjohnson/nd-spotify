@@ -44,11 +44,13 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
      */
     private static final String LOG_TAG = PlayerFragment.class.getSimpleName();
 
-    public static final String ARG_TRACKS = "TRACK_ARRAY";
-    public static final String ARG_POSITION = "POSITION";
+    public static final String ARG_TRACKS = "TRACK_LIST";
+    public static final String ARG_POSITION = "TRACK_POSITION";
 
-    private static final String KEY_TRACKS = "KEY_TRACK_ARRAY";
-    private static final String KEY_POSITION = "KEY_POSITION";
+    private static final String KEY_TRACKS = "KEY_TRACK_LIST";
+    private static final String KEY_TRACK_POSITION = "KEY_TRACK_POSITION";
+    private static final String KEY_PLAYER_STATE = "KEY_PLAYER_STATE";
+    private static final String KEY_SONG_POSITION = "KEY_SONG_POSITION";
 
     private static final String MINUTES_SECONDS_FORMAT = "%d:%02d";
 
@@ -63,7 +65,7 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
     /**
      * The position in the list of the currently selected track.
      */
-    private int mPosition;
+    private int mTrackPosition = -1;
 
     /**
      * The media player object.
@@ -72,6 +74,10 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
 
     /** The wifi lock object. */
     private WifiManager.WifiLock mWifiLock;
+
+    private int mSongPosition = 0;
+    private boolean mStartWhenPrepared;
+
 
     /**
      * The media player states, see:
@@ -84,6 +90,7 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
         PREPARED,
         STARTED,
         PAUSED,
+        PAUSED_AWAITING_RESTART,
         STOPPED,
         PLAYBACK_COMPLETED,
         ERROR,
@@ -115,16 +122,9 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
     @Override
     public final View onCreateView(final LayoutInflater inflater, final ViewGroup container,
                                    final Bundle savedInstanceState) {
-        mTrackList = getTrackList();
-        mPosition = getInitialPosition();
 
         // Inflate the fragment
         View rootView = inflater.inflate(R.layout.player, container, false);
-
-        // Restore any saved state
-        if (savedInstanceState != null) {
-            restoreState(savedInstanceState);
-        }
 
         txtTrack = (TextView) rootView.findViewById(R.id.txtTrack);
         txtArtist = (TextView) rootView.findViewById(R.id.txtArtist);
@@ -136,10 +136,6 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
         sbProgress = (SeekBar) rootView.findViewById(R.id.sbProgress);
         Button btnPrev = (Button) rootView.findViewById(R.id.btnPrev);
         Button btnNext = (Button) rootView.findViewById(R.id.btnNext);
-
-        sbProgress.setProgress(0);
-        sbProgress.setMax(SEEKBAR_INCREMENTS);
-        sbProgress.setOnSeekBarChangeListener(this);
 
         //--------------------------------------------------------
         // Callbacks for buttons
@@ -165,9 +161,20 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
             }
         });
 
-        // Change to the current track position - this will create a new media player
-        // and start playing the track
-        changePosition(mPosition);
+        sbProgress.setOnSeekBarChangeListener(this);
+
+        // If there is no saved state, initialise the state.
+        if (savedInstanceState == null) {
+            mTrackList = getTrackList();
+            //mTrackPosition = getInitialTrackPosition();
+
+            sbProgress.setMax(SEEKBAR_INCREMENTS);
+            displayProgressIndicators(0);
+
+            // Change to the current track position - this will create a new media player
+            // and start playing the track
+            changeTrackPosition(getInitialTrackPosition());
+        }
 
         return rootView;
     }
@@ -184,7 +191,9 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
             @Override
             public void onPrepared(MediaPlayer mediaPlayer) {
                 changeStatePrepared();
-                changeStateStarted();
+                if (mStartWhenPrepared) {
+                    changeStateStarted();
+                }
             }
         });
 
@@ -208,27 +217,88 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
         return mediaPlayer;
     }
 
-    private void acquireWifiLock() {
-        if (mWifiLock == null) {
-            WifiManager wifiManager = (WifiManager) getActivity().getSystemService(Context.WIFI_SERVICE);
-            mWifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, WIFI_LOCK_TAG);
-            mWifiLock.acquire();
-        }
-    }
-
-    private void releaseWifiLock() {
-        if (mWifiLock != null) {
-            mWifiLock.release();
-            mWifiLock = null;
-        }
+    /**
+     * The system calls this only when creating the layout in a dialog.
+     * It does not get called when using the DialogWhenLarge theme for the activity.
+     */
+    @NonNull
+    @Override
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
+        // The only reason you might override this method when using onCreateView() is
+        // to modify any dialog characteristics. For example, the dialog includes a
+        // title by default, but your custom layout might not need it. So here you can
+        // remove the dialog title, but you must call the superclass to get the Dialog.
+        Dialog dialog = super.onCreateDialog(savedInstanceState);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        return dialog;
     }
 
     @Override
     public void onPause() {
         if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
-            changeStatePaused();
+            changeStatePausedAwaitingRestart();
         }
         super.onPause();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        boolean startWhenPrepared = (mPlayerState == PlayerState.PAUSED_AWAITING_RESTART);
+
+        // Create a new instance of the media player
+        changeStateIdle();
+        // Initialise the media player by loading the current track
+        changeStateInitialised();
+        // Prepare the current track and start it if it was playing
+        changeStatePreparing(startWhenPrepared);
+
+        if (mPlayerState == PlayerState.PAUSED_AWAITING_RESTART) {
+            changeStateStarted();
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putParcelableArrayList(KEY_TRACKS, (ArrayList<AppTrack>) mTrackList);
+        outState.putInt(KEY_TRACK_POSITION, mTrackPosition);
+        outState.putString(KEY_PLAYER_STATE, mPlayerState.name());
+        outState.putInt(KEY_SONG_POSITION, mSongPosition);
+
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+        restoreState(savedInstanceState);
+    }
+
+    /**
+     * Restore the state of the fragment from a Bundle.
+     * @param savedInstanceState the Bundle containing the saved state
+     */
+    private void restoreState(final Bundle savedInstanceState) {
+        if (savedInstanceState != null) {
+            // restore the track list and position
+            mTrackList = savedInstanceState.getParcelableArrayList(KEY_TRACKS);
+            mTrackPosition = savedInstanceState.getInt(KEY_TRACK_POSITION);
+            mPlayerState = PlayerState.valueOf(savedInstanceState.getString(KEY_PLAYER_STATE));
+            mSongPosition = savedInstanceState.getInt(KEY_SONG_POSITION);
+
+            sbProgress.setMax(SEEKBAR_INCREMENTS);
+            displayTrackDetails(getTrack());
+            displayProgressIndicators(mSongPosition);
+//            boolean startWhenPrepared = (mPlayerState == PlayerState.PAUSED_AWAITING_RESTART);
+//
+//            // Create a new instance of the media player
+//            changeStateIdle();
+//            // Initialise the media player by loading the current track
+//            changeStateInitialised();
+//            // Prepare the current track and start it if it was playing
+//            changeStatePreparing(startWhenPrepared);
+        }
     }
 
     /** Change state to IDLE. */
@@ -256,11 +326,12 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
     }
 
     /** Change state to PREPARING. */
-    private void changeStatePreparing() {
+    private void changeStatePreparing(boolean startWhenPrepared) {
         if (mMediaPlayer != null
                 && mPlayerState == PlayerState.INITIALISED
                 || mPlayerState == PlayerState.STOPPED) {
             acquireWifiLock();
+            mStartWhenPrepared = startWhenPrepared;
             mMediaPlayer.prepareAsync();
             mPlayerState = PlayerState.PREPARING;
         }
@@ -276,10 +347,13 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
         if (mMediaPlayer != null
                 && mPlayerState == PlayerState.PREPARED
                 || mPlayerState == PlayerState.PAUSED
+                || mPlayerState == PlayerState.PAUSED_AWAITING_RESTART
                 || mPlayerState == PlayerState.PLAYBACK_COMPLETED)
         displayPlayPauseButtonAsPause();
         acquireWifiLock();
-//        mMediaPlayer.start();
+        mMediaPlayer.seekTo(mSongPosition);
+        mMediaPlayer.start();
+
         new MonitorProgressTask().execute();
         mPlayerState = PlayerState.STARTED;
     }
@@ -290,9 +364,16 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
                 && mPlayerState == PlayerState.STARTED) {
             displayPlayPauseButtonAsPlay();
             mMediaPlayer.pause();
+            mSongPosition = mMediaPlayer.getCurrentPosition();
             releaseWifiLock();
             mPlayerState = PlayerState.PAUSED;
         }
+    }
+
+    /** Change state to PAUSED_AWAITING_RESTART. */
+    private void changeStatePausedAwaitingRestart() {
+        changeStatePaused();
+        mPlayerState = PlayerState.PAUSED_AWAITING_RESTART;
     }
 
     /** Change state to STOPPED. */
@@ -311,11 +392,12 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
 
     /** Change state to PLAYBACK_COMPLETED. */
     private void changeStatePlaybackCompleted() {
-        displayPlayPauseButtonAsPlay();
-        // The last progress check may have been before the end of the song
-        sbProgress.setProgress(SEEKBAR_INCREMENTS);
-        txtTimePosition.setText(getHumanReadableMilliseconds(getTrack().getPreviewDuration()));
-
+        mSongPosition = 0;
+        if (getActivity() != null) {
+            displayPlayPauseButtonAsPlay();
+            // The last progress check may have been before the end of the song
+            displayProgressIndicators(mSongPosition);
+        }
         releaseWifiLock();
         mPlayerState = PlayerState.PLAYBACK_COMPLETED;
     }
@@ -329,6 +411,17 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
         }
         releaseWifiLock();
         mPlayerState = PlayerState.END;
+    }
+
+    /**
+     * Update the seekbar and time position text to indicate a supplied time
+     * position in the song.
+     * @param songPositionMillis the time into the song in milliseconds
+     */
+    private void displayProgressIndicators(int songPositionMillis) {
+        sbProgress.setProgress(songPositionMillis / 100);
+        int seconds = (int) TimeUnit.MILLISECONDS.toSeconds(songPositionMillis);
+        txtTimePosition.setText(getHumanReadableSeconds(seconds));
     }
 
     /** Change the PlayPause button to the pause icon. */
@@ -367,9 +460,9 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
      * Move to the previous track.
      */
     private void prevTrack() {
-        if (mPosition > 0) {
-            mPosition--;
-            changePosition(mPosition);
+        if (mTrackPosition > 0) {
+            mTrackPosition--;
+            changeTrackPosition(mTrackPosition);
         }
     }
 
@@ -377,9 +470,9 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
      * Move to the next track.
      */
     private void nextTrack() {
-        if (mPosition < mTrackList.size() - 1) {
-            mPosition++;
-            changePosition(mPosition);
+        if (mTrackPosition < mTrackList.size() - 1) {
+            mTrackPosition++;
+            changeTrackPosition(mTrackPosition);
         }
     }
 
@@ -387,32 +480,36 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
      * Change the position of the current track in the list.
      * @param newPosition the new position of the track in the list
      */
-    private void changePosition(int newPosition) {
-        if (newPosition >= 0 && newPosition < mTrackList.size()) {
+    private void changeTrackPosition(int newPosition) {
+        if (newPosition >= 0 && newPosition < mTrackList.size() && newPosition != mTrackPosition) {
             // End the previously selected track and free up resources
             changeStateEnd();
 
             // Change the current position
-            mPosition = newPosition;
+            mTrackPosition = newPosition;
 
             // Display the details of the new track
-            AppTrack appTrack = getTrack();
-            if (appTrack != null) {
-                txtTrack.setText(appTrack.getTrackName());
-                txtArtist.setText(appTrack.getArtistName());
-                txtAlbum.setText(appTrack.getAlbumName());
-                Picasso.with(getActivity()).load(appTrack.getImageUrlLarge()).into(imgAlbum);
-                sbProgress.setProgress(0);
-                txtTimePosition.setText(getHumanReadableSeconds(0));
-                txtTimeEnd.setText(getHumanReadableMilliseconds(appTrack.getPreviewDuration()));
-            }
+            displayTrackDetails(getTrack());
+
+            // Set the progress indicators to the start of the track
+            displayProgressIndicators(0);
 
             // Create a new instance of the media player
             changeStateIdle();
             // Initialise the media player by loading the current track
             changeStateInitialised();
             // Start playing the current track
-            changeStatePreparing();
+            changeStatePreparing(true);
+        }
+    }
+
+    private void displayTrackDetails(AppTrack appTrack) {
+        if (appTrack != null) {
+            txtTrack.setText(appTrack.getTrackName());
+            txtArtist.setText(appTrack.getArtistName());
+            txtAlbum.setText(appTrack.getAlbumName());
+            Picasso.with(getActivity()).load(appTrack.getImageUrlLarge()).into(imgAlbum);
+            txtTimeEnd.setText(getHumanReadableMilliseconds(appTrack.getPreviewDuration()));
         }
     }
 
@@ -434,50 +531,6 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
         long minutes = TimeUnit.SECONDS.toMinutes(totalSeconds);
         long seconds = totalSeconds - TimeUnit.MINUTES.toSeconds(minutes);
         return String.format(MINUTES_SECONDS_FORMAT, minutes, seconds);
-    }
-
-    /**
-     * The system calls this only when creating the layout in a dialog.
-     * It does not get called when using the DialogWhenLarge theme for the activity.
-     */
-    @NonNull
-    @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
-        // The only reason you might override this method when using onCreateView() is
-        // to modify any dialog characteristics. For example, the dialog includes a
-        // title by default, but your custom layout might not need it. So here you can
-        // remove the dialog title, but you must call the superclass to get the Dialog.
-        Dialog dialog = super.onCreateDialog(savedInstanceState);
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        return dialog;
-    }
-
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        outState.putParcelableArrayList(KEY_TRACKS, (ArrayList<AppTrack>) mTrackList);
-        outState.putInt(KEY_POSITION, mPosition);
-
-        super.onSaveInstanceState(outState);
-    }
-
-    @Override
-    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
-        super.onViewStateRestored(savedInstanceState);
-        if (savedInstanceState != null) {
-            restoreState(savedInstanceState);
-        }
-    }
-
-    /**
-     * Restore the state of the fragment from a Bundle.
-     * @param savedInstanceState the Bundle containing the saved state
-     */
-    private void restoreState(final Bundle savedInstanceState) {
-        if (savedInstanceState != null) {
-            // restore the track list and position
-            mTrackList = savedInstanceState.getParcelableArrayList(KEY_TRACKS);
-            mPosition = savedInstanceState.getInt(KEY_POSITION);
-        }
     }
 
     @Override
@@ -532,10 +585,9 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
 
     /**
      * Returns the position in the list of the initially selected track.
-     *
      * @return the position in the list of the initially selected track
      */
-    private int getInitialPosition() {
+    private int getInitialTrackPosition() {
         Bundle arguments = getArguments();
         return (arguments == null) ? -1 : arguments.getInt(ARG_POSITION);
     }
@@ -545,10 +597,10 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
      * @return the current track
      */
     private AppTrack getTrack() {
-        if (mTrackList == null || mPosition == -1) {
+        if (mTrackList == null || mTrackPosition == -1) {
             return null;
         }
-        return mTrackList.get(mPosition);
+        return mTrackList.get(mTrackPosition);
     }
 
     private Uri getPreviewUri() {
@@ -566,21 +618,20 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
     /**
      * Called when the seekbar position moves
      * @param seekBar the seekbar
-     * @param progress the position of the seekbar as a percentage
+     * @param progress the position of the seekbar as a number 0..SEEKBAR_INCREMENTS
      * @param fromUser whether the seekbar was moved by the user
      */
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-
-        if(fromUser){
-            int seconds = progress / 10;
-            int millis = (int) TimeUnit.SECONDS.toMillis(seconds);
-            // change to the new position in the song
+        if (fromUser) {
+            // Determine how far into the song in milliseconds
+            int millis = (int) TimeUnit.SECONDS.toMillis(progress / 10);
+            // move the media player to the new song position
             mMediaPlayer.seekTo(millis);
-            // Update the time position text
-            txtTimePosition.setText(getHumanReadableSeconds(seconds));
+            // display the new song position in the progress indicators
+            //txtTimePosition.setText(getHumanReadableSeconds(progress / 10));
+            displayProgressIndicators(millis);
         }
-
     }
 
     @Override
@@ -589,6 +640,21 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
+    }
+
+    private void acquireWifiLock() {
+        if (mWifiLock == null) {
+            WifiManager wifiManager = (WifiManager) getActivity().getSystemService(Context.WIFI_SERVICE);
+            mWifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, WIFI_LOCK_TAG);
+            mWifiLock.acquire();
+        }
+    }
+
+    private void releaseWifiLock() {
+        if (mWifiLock != null) {
+            mWifiLock.release();
+            mWifiLock = null;
+        }
     }
 
     /**
@@ -600,7 +666,6 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
 
         @Override
         protected Void doInBackground(Void... params) {
-            mMediaPlayer.start();
             while (mMediaPlayer.isPlaying()) {
                 publishProgress((int) mMediaPlayer.getCurrentPosition());
                 try {
@@ -624,9 +689,7 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
 
         @Override
         protected void onProgressUpdate(Integer... songPositionMillis) {
-            int seconds = (int) TimeUnit.MILLISECONDS.toSeconds(songPositionMillis[0]);
-            sbProgress.setProgress(songPositionMillis[0] / 100);
-            txtTimePosition.setText(getHumanReadableSeconds(seconds));
+            displayProgressIndicators(songPositionMillis[0]);
         }
 
     }
