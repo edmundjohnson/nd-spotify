@@ -91,7 +91,7 @@ public class AppTrack implements Parcelable {
 
     // Getters and setters
 
-    public String getId() {
+    private String getId() {
         return id;
     }
 
@@ -115,7 +115,7 @@ public class AppTrack implements Parcelable {
         return previewUrl;
     }
 
-    public long getDuration() {
+    private long getDuration() {
         return duration;
     }
 

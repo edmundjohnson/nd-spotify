@@ -44,8 +44,8 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
      */
     private static final String LOG_TAG = PlayerFragment.class.getSimpleName();
 
-    public static final String ARG_TRACKS = "TRACK_LIST";
-    public static final String ARG_POSITION = "TRACK_POSITION";
+    private static final String ARG_TRACKS = "TRACK_LIST";
+    private static final String ARG_POSITION = "TRACK_POSITION";
 
     private static final String KEY_TRACKS = "KEY_TRACK_LIST";
     private static final String KEY_TRACK_POSITION = "KEY_TRACK_POSITION";
@@ -93,9 +93,9 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
         PAUSED_AWAITING_RESTART,
         STOPPED,
         PLAYBACK_COMPLETED,
-        ERROR,
+//        ERROR,
         END
-    };
+    }
 
     /**
      * The current state of the media player.
@@ -166,13 +166,12 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
         // If there is no saved state, initialise the state.
         if (savedInstanceState == null) {
             mTrackList = getTrackList();
-            //mTrackPosition = getInitialTrackPosition();
 
             sbProgress.setMax(SEEKBAR_INCREMENTS);
             displayProgressIndicators(0);
 
-            // Change to the current track position - this will create a new media player
-            // and start playing the track
+            // Change to the track position selected by the user -
+            // this will create a new media player and start playing the track
             changeTrackPosition(getInitialTrackPosition());
         }
 
@@ -290,14 +289,6 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
             sbProgress.setMax(SEEKBAR_INCREMENTS);
             displayTrackDetails(getTrack());
             displayProgressIndicators(mSongPosition);
-//            boolean startWhenPrepared = (mPlayerState == PlayerState.PAUSED_AWAITING_RESTART);
-//
-//            // Create a new instance of the media player
-//            changeStateIdle();
-//            // Initialise the media player by loading the current track
-//            changeStateInitialised();
-//            // Prepare the current track and start it if it was playing
-//            changeStatePreparing(startWhenPrepared);
         }
     }
 
@@ -311,8 +302,8 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
 
     /** Change state to INITIALISED. */
     private void changeStateInitialised() {
-        if (mMediaPlayer != null &&
-                mPlayerState == PlayerState.IDLE) {
+        if (mMediaPlayer != null
+                && mPlayerState == PlayerState.IDLE) {
             try {
                 mMediaPlayer.setDataSource(getActivity(), getPreviewUri());
             } catch (Exception e) {
@@ -328,8 +319,8 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
     /** Change state to PREPARING. */
     private void changeStatePreparing(boolean startWhenPrepared) {
         if (mMediaPlayer != null
-                && mPlayerState == PlayerState.INITIALISED
-                || mPlayerState == PlayerState.STOPPED) {
+                && (mPlayerState == PlayerState.INITIALISED
+                || mPlayerState == PlayerState.STOPPED)) {
             acquireWifiLock();
             mStartWhenPrepared = startWhenPrepared;
             mMediaPlayer.prepareAsync();
@@ -345,17 +336,19 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
     /** Change state to STARTED. */
     private void changeStateStarted() {
         if (mMediaPlayer != null
-                && mPlayerState == PlayerState.PREPARED
+                && (mPlayerState == PlayerState.PREPARED
                 || mPlayerState == PlayerState.PAUSED
                 || mPlayerState == PlayerState.PAUSED_AWAITING_RESTART
-                || mPlayerState == PlayerState.PLAYBACK_COMPLETED)
-        displayPlayPauseButtonAsPause();
-        acquireWifiLock();
-        mMediaPlayer.seekTo(mSongPosition);
-        mMediaPlayer.start();
+                || mPlayerState == PlayerState.PLAYBACK_COMPLETED)) {
+
+            displayPlayPauseButtonAsPause();
+            acquireWifiLock();
+            mMediaPlayer.seekTo(mSongPosition);
+            mMediaPlayer.start();
+            mPlayerState = PlayerState.STARTED;
+        }
 
         new MonitorProgressTask().execute();
-        mPlayerState = PlayerState.STARTED;
     }
 
     /** Change state to PAUSED. */
@@ -376,19 +369,19 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
         mPlayerState = PlayerState.PAUSED_AWAITING_RESTART;
     }
 
-    /** Change state to STOPPED. */
-    private void changeStateStopped() {
-        if (mMediaPlayer != null
-                && mPlayerState == PlayerState.PREPARED
-                || mPlayerState == PlayerState.STARTED
-                || mPlayerState == PlayerState.PAUSED
-                || mPlayerState == PlayerState.PLAYBACK_COMPLETED) {
-            mMediaPlayer.stop();
-            releaseWifiLock();
-            displayPlayPauseButtonAsPlay();
-            mPlayerState = PlayerState.STOPPED;
-        }
-    }
+//    /** Change state to STOPPED. */
+//    private void changeStateStopped() {
+//        if (mMediaPlayer != null
+//                && (mPlayerState == PlayerState.PREPARED
+//                || mPlayerState == PlayerState.STARTED
+//                || mPlayerState == PlayerState.PAUSED
+//                || mPlayerState == PlayerState.PLAYBACK_COMPLETED)) {
+//            mMediaPlayer.stop();
+//            releaseWifiLock();
+//            displayPlayPauseButtonAsPlay();
+//            mPlayerState = PlayerState.STOPPED;
+//        }
+//    }
 
     /** Change state to PLAYBACK_COMPLETED. */
     private void changeStatePlaybackCompleted() {
@@ -625,12 +618,12 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         if (fromUser) {
             // Determine how far into the song in milliseconds
-            int millis = (int) TimeUnit.SECONDS.toMillis(progress / 10);
-            // move the media player to the new song position
-            mMediaPlayer.seekTo(millis);
+            int songPositionMillis = (int) TimeUnit.SECONDS.toMillis(progress / 10);
             // display the new song position in the progress indicators
-            //txtTimePosition.setText(getHumanReadableSeconds(progress / 10));
-            displayProgressIndicators(millis);
+            displayProgressIndicators(songPositionMillis);
+            // move the media player to the new song position
+            mSongPosition = songPositionMillis;
+            mMediaPlayer.seekTo(mSongPosition);
         }
     }
 
@@ -676,13 +669,6 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
                 }
                 // Escape early if cancel() is called
                 if (isCancelled()) break;
-
-                //TODO
-                // Move all the media player calls here, and execute them depending on the
-                // state of mPlayerState
-                // BUT... the AsyncTask would be destroyed anyway, so no point ???
-                // Research Reto's thing about fragments with no UI
-                // implement a service??? No, submit as is first
             }
             return null;
         }

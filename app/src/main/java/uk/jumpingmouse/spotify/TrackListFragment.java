@@ -44,7 +44,7 @@ public class TrackListFragment extends Fragment {
 
     private static final String QUERY_COUNTRY_KEY = "country";
 
-    public static final String ARG_ARTIST = "ARTIST";
+    private static final String ARG_ARTIST = "ARTIST";
 
     private static final String KEY_ARTIST = "KEY_ARTIST";
     private static final String KEY_TRACK_LIST = "KEY_TRACK_LIST";
@@ -180,7 +180,7 @@ public class TrackListFragment extends Fragment {
      */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
+//        int id = item.getItemId();
 //        if (id == R.id.action_refresh) {
 //            fetchTracks(appArtist.getId());
 //            return true;

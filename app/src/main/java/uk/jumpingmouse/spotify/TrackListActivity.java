@@ -77,7 +77,7 @@ public class TrackListActivity extends AppCompatActivity implements TrackListFra
     @Override
     public void onTrackSelected(List<AppTrack> appTrackList, int position) {
         Intent intent = new Intent(this, PlayerActivity.class);
-        intent.putParcelableArrayListExtra("TRACK_LIST", (ArrayList) appTrackList);
+        intent.putParcelableArrayListExtra("TRACK_LIST", (ArrayList<AppTrack>) appTrackList);
         intent.putExtra("POSITION", position);
         startActivity(intent);
     }

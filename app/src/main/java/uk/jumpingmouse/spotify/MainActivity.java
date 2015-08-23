@@ -20,7 +20,6 @@ public class MainActivity extends AppCompatActivity
         implements ArtistListFragment.Callback, TrackListFragment.Callback {
 
     private static final String TRACKLISTFRAGMENT_TAG = "TRACK_LIST_FRAGMENT_TAG";
-    private static final String PLAYERFRAGMENT_TAG = "PLAYER_FRAGMENT_TAG";
 
     private boolean mMultiPane;
 
