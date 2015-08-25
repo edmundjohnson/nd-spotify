@@ -182,7 +182,7 @@ public class ArtistListFragment extends Fragment {
      * invoke an async task to refresh the list of artists.
      * @param artistName the string against which to match artist names.
      */
-    private void artistNameEntered(String artistName) {
+    private void artistNameEntered(final String artistName) {
         if (artistName != null && !artistName.isEmpty()) {
             if (NetUtil.isConnected(getActivity())) {
                 // Deactivate any list item view which is activated
@@ -194,11 +194,24 @@ public class ArtistListFragment extends Fragment {
                 ArtistListFragment.Callback callbackActivity = (ArtistListFragment.Callback) getActivity();
                 callbackActivity.onArtistNameEntered();
                 // Get the artists which match the entered name
-                new FetchArtistsTask().execute(artistName);
+                FetchArtistsTask fetchArtistsTask = new FetchArtistsTask(new ArtistListFragmentCallback() {
+                    @Override
+                    public void displayNoArtistsMessage() {
+                        if (isAdded()) {
+                            String message = String.format(getString(R.string.no_matching_artists), artistName);
+                            UiUtil.displayMessage(getActivity(), message);
+                        }
+                    }
+                });
+                fetchArtistsTask.execute(artistName);
             } else {
                 UiUtil.displayMessage(getActivity(), getString(R.string.error_not_connected));
             }
         }
+    }
+
+    private interface ArtistListFragmentCallback {
+        void displayNoArtistsMessage();
     }
 
     /**
@@ -206,6 +219,12 @@ public class ArtistListFragment extends Fragment {
      */
     public class FetchArtistsTask extends AsyncTask<String, Void, List<AppArtist>> {
         private String searchString = null;
+
+        private final ArtistListFragmentCallback mCallback;
+
+        public FetchArtistsTask(ArtistListFragmentCallback callback) {
+            mCallback = callback;
+        }
 
         /**
          * Background task to fetch a list of artists from Spotify and return it in a custom list.
@@ -275,8 +294,7 @@ public class ArtistListFragment extends Fragment {
         @Override
         protected void onPostExecute(List<AppArtist> updatedArtistList) {
             if (updatedArtistList == null || updatedArtistList.size() == 0) {
-                String message = String.format(getString(R.string.no_matching_artists), searchString);
-                UiUtil.displayMessage(getActivity(), message);
+                mCallback.displayNoArtistsMessage();
                 return;
             }
 

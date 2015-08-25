@@ -24,7 +24,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 
@@ -67,9 +66,7 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
      */
     private int mTrackPosition = -1;
 
-    /**
-     * The media player object.
-     */
+    /** The media player object. */
     private MediaPlayer mMediaPlayer;
 
     /** The wifi lock object. */
@@ -83,7 +80,7 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
      * The media player states, see:
      * http://developer.android.com/reference/android/media/MediaPlayer.html.
      */
-    private enum PlayerState {
+    public enum PlayerState {
         IDLE,
         INITIALISED,
         PREPARING,
@@ -97,9 +94,7 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
         END
     }
 
-    /**
-     * The current state of the media player.
-     */
+    /** The current state of the media player. */
     private PlayerState mPlayerState;
 
     // Display elements
@@ -111,6 +106,8 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
     private TextView txtTimeEnd;
     private SeekBar sbProgress;
     private Button btnPlayPause;
+    private Button btnPrev;
+    private Button btnNext;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -134,8 +131,8 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
         txtTimeEnd = (TextView) rootView.findViewById(R.id.txtTimeEnd);
         btnPlayPause = (Button) rootView.findViewById(R.id.btnPlayPause);
         sbProgress = (SeekBar) rootView.findViewById(R.id.sbProgress);
-        Button btnPrev = (Button) rootView.findViewById(R.id.btnPrev);
-        Button btnNext = (Button) rootView.findViewById(R.id.btnNext);
+        btnPrev = (Button) rootView.findViewById(R.id.btnPrev);
+        btnNext = (Button) rootView.findViewById(R.id.btnNext);
 
         //--------------------------------------------------------
         // Callbacks for buttons
@@ -172,7 +169,7 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
 
             // Change to the track position selected by the user -
             // this will create a new media player and start playing the track
-            changeTrackPosition(getInitialTrackPosition());
+            changeTrackPlaying(getInitialTrackPosition());
         }
 
         return rootView;
@@ -206,7 +203,6 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
         mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
             @Override
             public boolean onError(MediaPlayer mediaPlayer, int what, int extra) {
-                Toast.makeText(getActivity(), "A media error has occurred", Toast.LENGTH_LONG).show();
                 Log.e(LOG_TAG, String.format("MediaPlayer error: What: %d. Extra: %d", what, extra));
                 changeStateEnd();
                 return false;
@@ -346,9 +342,9 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
             mMediaPlayer.seekTo(mSongPosition);
             mMediaPlayer.start();
             mPlayerState = PlayerState.STARTED;
-        }
 
-        new MonitorProgressTask().execute();
+            new MonitorProgressTask().execute();
+        }
     }
 
     /** Change state to PAUSED. */
@@ -454,8 +450,7 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
      */
     private void prevTrack() {
         if (mTrackPosition > 0) {
-            mTrackPosition--;
-            changeTrackPosition(mTrackPosition);
+            changeTrackPlaying(mTrackPosition - 1);
         }
     }
 
@@ -464,28 +459,30 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
      */
     private void nextTrack() {
         if (mTrackPosition < mTrackList.size() - 1) {
-            mTrackPosition++;
-            changeTrackPosition(mTrackPosition);
+            changeTrackPlaying(mTrackPosition + 1);
         }
     }
 
     /**
-     * Change the position of the current track in the list.
-     * @param newPosition the new position of the track in the list
+     * Change the track which is playing.
+     * @param newPosition the position of the track to play in the track list
      */
-    private void changeTrackPosition(int newPosition) {
+    private void changeTrackPlaying(int newPosition) {
         if (newPosition >= 0 && newPosition < mTrackList.size() && newPosition != mTrackPosition) {
             // End the previously selected track and free up resources
             changeStateEnd();
 
             // Change the current position
             mTrackPosition = newPosition;
+            btnPrev.setEnabled(mTrackPosition > 0);
+            btnNext.setEnabled(mTrackPosition < mTrackList.size() - 1);
 
             // Display the details of the new track
             displayTrackDetails(getTrack());
 
             // Set the progress indicators to the start of the track
-            displayProgressIndicators(0);
+            mSongPosition = 0;
+            displayProgressIndicators(mSongPosition);
 
             // Create a new instance of the media player
             changeStateIdle();
@@ -650,6 +647,7 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
         }
     }
 
+    //-------------------------------------------------------------------------------
     /**
      * Background task to monitor the progress of the song and update the seekbar and
      * song position indicator accordingly.
@@ -659,7 +657,7 @@ public class PlayerFragment extends DialogFragment implements SeekBar.OnSeekBarC
 
         @Override
         protected Void doInBackground(Void... params) {
-            while (mMediaPlayer.isPlaying()) {
+            while (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
                 publishProgress((int) mMediaPlayer.getCurrentPosition());
                 try {
                     Thread.sleep(CHECK_INTERVAL_MS);

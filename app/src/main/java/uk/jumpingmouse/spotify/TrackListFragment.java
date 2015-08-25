@@ -52,13 +52,13 @@ public class TrackListFragment extends Fragment {
     private static final long PREVIEW_DURATION_MS = 30000;
 
     /** The artist whose top tracks are to be listed. */
-    private AppArtist appArtist;
+    private AppArtist mArtist;
 
     /** The list of top tracks for the artist. */
-    private ArrayList<AppTrack> appTrackList;
+    private ArrayList<AppTrack> mTrackList;
 
     /** The adapter for the track list. */
-    private TrackAdapter trackAdapter;
+    private TrackAdapter mTrackAdapter;
 
     /**
      * Instantiates and returns a new TrackListFragment for a supplied artist.
@@ -92,11 +92,11 @@ public class TrackListFragment extends Fragment {
     @Override
     public final View onCreateView(final LayoutInflater inflater, final ViewGroup container,
                                     final Bundle savedInstanceState) {
-        appArtist = getArtist();
+        mArtist = getArtist();
 
         // Initialise the track list and adapter
-        appTrackList = new ArrayList<>();
-        trackAdapter = new TrackAdapter(getActivity(), appTrackList);
+        mTrackList = new ArrayList<>();
+        mTrackAdapter = new TrackAdapter(getActivity(), mTrackList);
 
         // Inflate the fragment
         View rootView = inflater.inflate(R.layout.track_list, container, false);
@@ -104,7 +104,7 @@ public class TrackListFragment extends Fragment {
         // Get a reference to the ListView
         ListView listviewTrack = (ListView) rootView.findViewById(R.id.listview_track);
         // Attach the adapter to the ListView
-        listviewTrack.setAdapter(trackAdapter);
+        listviewTrack.setAdapter(mTrackAdapter);
 
         // Create a listener for clicking on the list item.
         listviewTrack.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -112,7 +112,7 @@ public class TrackListFragment extends Fragment {
             public void onItemClick(AdapterView adapterView, View view, int position, long l) {
                 // Call the item click handler in the activity in which the list is being displayed
                 TrackListFragment.Callback callbackActivity = (TrackListFragment.Callback) getActivity();
-                callbackActivity.onTrackSelected(trackAdapter.getTrackList(), position);
+                callbackActivity.onTrackSelected(mTrackAdapter.getTrackList(), position);
             }
         });
 
@@ -121,8 +121,8 @@ public class TrackListFragment extends Fragment {
             restoreState(savedInstanceState);
         } else {
             // Fetch the top tracks for the artist in another thread
-            if (appArtist != null) {
-                fetchTracks(appArtist.getId());
+            if (mArtist != null) {
+                fetchTracks(mArtist.getId());
             }
         }
 
@@ -131,8 +131,8 @@ public class TrackListFragment extends Fragment {
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        outState.putParcelable(KEY_ARTIST, appArtist);
-        outState.putParcelableArrayList(KEY_TRACK_LIST, appTrackList);
+        outState.putParcelable(KEY_ARTIST, mArtist);
+        outState.putParcelableArrayList(KEY_TRACK_LIST, mTrackList);
 
         super.onSaveInstanceState(outState);
     }
@@ -152,17 +152,17 @@ public class TrackListFragment extends Fragment {
     private void restoreState(final Bundle savedInstanceState) {
         if (savedInstanceState != null) {
             // restore the artist
-            appArtist = savedInstanceState.getParcelable(KEY_ARTIST);
+            mArtist = savedInstanceState.getParcelable(KEY_ARTIST);
             //set action bar subtitle ?
             // restore the track list
             List<AppTrack> updatedAppTrackList = savedInstanceState.getParcelableArrayList(KEY_TRACK_LIST);
-            appTrackList.clear();
+            mTrackList.clear();
             if (updatedAppTrackList != null) {
                 for (AppTrack appTrack : updatedAppTrackList) {
-                    appTrackList.add(appTrack);
+                    mTrackList.add(appTrack);
                 }
             }
-            trackAdapter.notifyDataSetChanged();
+            mTrackAdapter.notifyDataSetChanged();
         }
     }
 
@@ -195,17 +195,37 @@ public class TrackListFragment extends Fragment {
     private void fetchTracks(String artistId) {
         if (artistId != null && !artistId.isEmpty()) {
             if (NetUtil.isConnected(getActivity())) {
-                new FetchTracksTask().execute(artistId);
+                FetchTracksTask fetchTracksTask = new FetchTracksTask(new TrackListFragmentCallback() {
+                    @Override
+                    public void displayNoTracksMessage() {
+                        if (isAdded()) {
+                            String message = String.format(
+                                    getString(R.string.no_matching_tracks_for_artist), mArtist.getName());
+                            UiUtil.displayMessage(getActivity(), message);
+                        }
+                    }
+                });
+                fetchTracksTask.execute(artistId);
             } else {
                 UiUtil.displayMessage(getActivity(), getString(R.string.error_not_connected));
             }
         }
     }
 
+    private interface TrackListFragmentCallback {
+        void displayNoTracksMessage();
+    }
+
     /**
      * Background task for getting the list of top tracks for an artist from Spotify.
      */
     public class FetchTracksTask extends AsyncTask<String, Void, List<AppTrack>> {
+
+        private final TrackListFragmentCallback mCallback;
+
+        public FetchTracksTask(TrackListFragmentCallback callback) {
+            mCallback = callback;
+        }
 
         /**
          * Background task to fetch a list of the top tracks for an artist from Spotify
@@ -251,19 +271,17 @@ public class TrackListFragment extends Fragment {
         @Override
         protected void onPostExecute(List<AppTrack> updatedTrackList) {
             if (updatedTrackList == null || updatedTrackList.size() == 0) {
-                String message = String.format(
-                        getString(R.string.no_matching_tracks_for_artist), appArtist.getName());
-                UiUtil.displayMessage(getActivity(), message);
+                mCallback.displayNoTracksMessage();
                 return;
             }
 
             // update the adapter's data object
-            appTrackList.clear();
+            mTrackList.clear();
             for (AppTrack track : updatedTrackList) {
-                appTrackList.add(track);
+                mTrackList.add(track);
             }
             // notify the adapter that its data object has changed
-            trackAdapter.notifyDataSetChanged();
+            mTrackAdapter.notifyDataSetChanged();
         }
 
         /**
